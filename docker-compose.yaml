@@ -1,0 +1,101 @@
+version: "3.9"
+
+############################
+# Re-usable env & networks #
+############################
+x-common-env: &common-env
+  TZ: America/New_York
+  # Pick up proxy settings if you need Zscaler inside the containers
+  # HTTP_PROXY: http://proxy.corp.local:8080
+  # HTTPS_PROXY: http://proxy.corp.local:8080
+
+networks:
+  web:       # Public-facing traffic (HTTP/S)
+  internal:  # DB-only traffic
+
+volumes:
+  pgdata:    # Durable Postgres cluster
+
+####################
+# Service section  #
+####################
+services:
+  ### 1️⃣  Postgres DB ###
+  db:
+    image: postgres:16-alpine
+    environment:
+      <<: *common-env
+      POSTGRES_DB: assetdb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set_in_backend/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin"]
+      interval: 10s
+      retries: 5
+
+  ### 2️⃣  Backend (FastAPI) ###
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile        # see sample below
+      target: production            # multi-stage
+    environment:
+      <<: *common-env
+      DATABASE_URL: postgresql+asyncpg://admin:${POSTGRES_PASSWORD}@db:5433/assetdb
+      # any other env (Snipe-IT keys, JWT secret, etc.)
+      SNIPEIT_API_URL: https://bbcstudios.snipe-it.io/api/v1
+      SNIPEIT_TOKEN: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiMDBkOWQ5NWE1YzAzZGI1YWQ1NTczMDJjNTliMmRlMDM1OGMyOWZkYmY3MjlmNzYzMzVlZmRkMDdiODU3Yzc1MGM1ZmRjMjk4ZGI5ZWJmNWMiLCJpYXQiOjE3NDM3MTY3MDcuMDkzMzE4LCJuYmYiOjE3NDM3MTY3MDcuMDkzMzIyLCJleHAiOjIzNzQ4Njg3MDcuMDcxODM2LCJzdWIiOiI0NjM0Iiwic2NvcGVzIjpbXX0.G-pbJloNqyK62kr8INgnTVTYQO3IBOMkoVE0dQ0ReeLjzv5qD7xyGQC6Gz8RU5FB_vdACYFKvEC6AaUsSwUmrJ1WjP1wEZsp6EntWh3xsrgosUekeJHQPN_KzJt39UMjBwIpaQNJxTGd1JFAKlrhlM2iCr1nVihWMIvc6_q0IZTZoUcgcUkauZzbSkpjuYs3Uut_9yFmC7olpMzqqaNeSVVrLLus1CnmkV4tKtusynk2HFOjM5EWnauEvWgQTjTPZuJ9f2FkMmWjupxQ-kyW1BPnbck1ryMbKdUTlSpe7xfveuCheyOCwSz2TYZPAPaU1OjiTB5lCMcvT0eWJNiKnbh97o48JLBimPLZXx0KoaUGuBo2Gi6hzamJNce6c2MwM7Ziu2uBeANF8l1P2mZYwvwNejbz2yjZ-4pnR3vnBiSHHQlzDO7q1e3NQZBlwa4-SJ5NnDRd2VEhf4iX2NTE8U1WFhk8N6qnPd9PSebKmk5WICjxHCcqCIsfMkhhep1vjAZj5FnM20-uiOCZ57PZ6WwwPZ4jdROA45ss5piuveJ2bTkbk-24cpFyLuYWkbvdO8I5fPwdSf53CC42tidgnYAmHkhzQh_wF4GOAtSVgwpfMAZwZsGdnr_i1f1Vzefp7Tg7f_7BWngj_xF5fBiG5jJKbgZJyyWqMnvp_jda4gg
+
+
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [internal, web]
+    restart: unless-stopped
+    labels:                         # Traefik autoconfig
+      - "traefik.enable=true"
+      - "traefik.http.routers.asset-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.services.asset-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.asset-api.entrypoints=websecure"
+      - "traefik.http.routers.asset-api.tls.certresolver=internal"
+
+  ### 3️⃣  Frontend (React + Vite) ###
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile        # see sample below
+      target: production
+    networks: [web]
+    depends_on: [backend]
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.asset-ui.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.services.asset-ui.loadbalancer.server.port=80"
+      - "traefik.http.routers.asset-ui.entrypoints=websecure"
+      - "traefik.http.routers.asset-ui.tls.certresolver=internal"
+
+  ### 4️⃣  Edge proxy (Traefik) ###
+  proxy:
+    image: traefik:v3.0
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.internal.acme.tlschallenge=true"
+      # comment the next line if you only need HTTP inside corp
+      - "--certificatesresolvers.internal.acme.email=you@company.com"
+      - "--certificatesresolvers.internal.acme.storage=/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/acme.json:/acme.json"
+    networks: [web]
+    restart: unless-stopped
