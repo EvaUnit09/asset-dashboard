@@ -7,6 +7,6 @@ Set-Location E:\asset-app\backend
 
 #  call venv's Python explicitly  (single line or use back-ticks for wrapping)
 
-E:\asset-app\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port $Env:PORT --workers 1 --proxy-headers
+E:\asset-app\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port $Env:PORT --workers 4 --proxy-headers
 
 

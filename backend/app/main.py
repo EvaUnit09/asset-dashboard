@@ -20,7 +20,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 origins = [
-    "http://10.4.208.227"
+    "http://10.4.208.227",
+    "http://asset-ny.worldwide.bbc.co.uk"
 ]
 
 app.include_router(assets_router)
