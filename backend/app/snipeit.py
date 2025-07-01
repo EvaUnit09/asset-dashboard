@@ -1,7 +1,12 @@
-import requests
+import requests, os, certifi
+
+CA_BUNDLE = certifi.where()
 from typing import Generator
 
 from .settings import settings
+
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
 
 HEADERS = {
     "Authorization": f"Bearer {settings.snipeit_token}",
@@ -11,7 +16,7 @@ HEADERS = {
 def fetch_all_users() -> list[dict]:
     url = f"{settings.snipeit_api_url}/users"
     params = {"limit": 1000, "expand": "department"}
-    resp = requests.get(url, headers=HEADERS, params=params, timeout=30)
+    resp = requests.get(url, headers=HEADERS, params=params, verify=CA_BUNDLE, timeout=30)
     resp.raise_for_status()
     return resp.json()["rows"]
 
