@@ -9,7 +9,7 @@ jobs:
     runs-on: [self-hosted, windows, asset]
     defaults:
       run:
-        shell: pwsh
+        shell: powershell
 
     steps:
     - name: Check out code
@@ -18,7 +18,7 @@ jobs:
     - name: Add corporate CA for Node
       run: |
         copy C:\ZscalerRootCA.crt C:\ca-bundle.pem
-      shell: pwsh
+      shell: powershell
         
 
     # ---------- Front-end ----------
