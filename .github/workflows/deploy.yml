@@ -46,6 +46,8 @@ jobs:
     - name: Deploy static files to IIS site
       run: |
         robocopy frontend\dist E:\asset-app\site /MIR
+        if ($LASTEXITCODE -le 7) { exit 0 }  # 0-7 = success/warning
+        exit $LASTEXITCODE                    # 8+ = fail the job
 
     # ---------- Back-end ----------
     - name: Set up Python
