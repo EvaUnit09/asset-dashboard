@@ -53,7 +53,7 @@ jobs:
 
     - name: Deploy static files to IIS site
       run: |
-        robocopy frontend\dist E:\asset-app\site /MIR
+        robocopy frontend\dist E:\asset-app\site /MIR /XF web.config
         if ($LASTEXITCODE -le 7) { exit 0 }  # 0-7 = success/warning
         exit $LASTEXITCODE                    # 8+ = fail the job
 
