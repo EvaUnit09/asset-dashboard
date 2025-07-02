@@ -12,16 +12,21 @@ jobs:
         shell: powershell
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v4
-      with:
-        clean: true
-      
+    # 1 Make Git trust the workspace -------------------------------------------------
+    - name: Trust workspace for Git
+      shell: cmd
+      run: git config --system --add safe.directory "E:/actions-runner/_work/asset-dashboard/asset-dashboard"
 
-    - name: Add corporate CA for Node
-      run: |
-        copy E:\actions-runner\ZscalerRootCA.crt E:\actions-runner\ca-bundle.pem
+    # 2 Check out code ---------------------------------------------------------------
+    - uses: actions/checkout@v4
+      with:
+        clean: true          # or path: src  (see fix ➋)
+
+    # 3 Copy Zscaler CA so Node / pip can use it ------------------------------------
+    - name: Add corporate CA bundle
       shell: powershell
+      run: |
+        Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\actions-runner\ca-bundle.pem' -Force
         
 
     # ---------- Front-end ----------
