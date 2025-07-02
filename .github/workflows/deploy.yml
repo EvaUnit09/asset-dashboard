@@ -1,0 +1,51 @@
+name: Deploy to asset server
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-deploy:
+    runs-on: [self-hosted, windows, asset]
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    # ---------- Front-end ----------
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        # use an available version (20 LTS today) —
+        # change to 24.x once setup-node supports it
+        node-version: '20'
+
+    - name: Install dependencies & build
+      working-directory: frontend
+      run: |
+        npm ci
+        npm run build
+
+    - name: Deploy static files to IIS site
+      run: |
+        robocopy frontend\dist E:\asset-app\site /MIR
+
+    # ---------- Back-end ----------
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install backend requirements (venv)
+      working-directory: backend
+      run: |
+        E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
+        E:\asset-app\backend\.venv\Scripts\pip.exe install -r requirements.txt
+
+    # ---------- Restart service ----------
+    - name: Restart AssetBackend service
+      run: |
+        nssm restart AssetBackend
