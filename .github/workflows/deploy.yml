@@ -17,9 +17,7 @@ jobs:
 
     - name: Add corporate CA for Node
       run: |
-        echo ------ Begin certificate ----- > C:\ZscalerRootCA.crt
-        echo MIID... CA_BASE64... >> C:\ZscalerRootCA.crt
-        echo ----- End certificate ------ >> C:\ZscalerRootCA.crt
+        copy C:\ZscalerRootCA.crt C:\ca-bundle.pem
       shell: pwsh
         
 
@@ -34,7 +32,7 @@ jobs:
     - name: Install dependencies & build
       working-directory: frontend
       env:
-        NODE_EXTRA_CA_CERTS: C:\ZscalerRootCA.crt
+        NODE_EXTRA_CA_CERTS: C:\ca-bundle.pem
       run: |
         npm ci
         npm run build
