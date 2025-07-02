@@ -12,8 +12,13 @@ jobs:
         shell: powershell
 
     steps:
+    - name: Mark workspace as safe for git
+      shell: cmd
+      run: git config --system --add.safe.directory E:/actions-runner/_work/asset-dashboard/asset-dashboard
+      
     - name: Check out code
       uses: actions/checkout@v4
+      
 
     - name: Add corporate CA for Node
       run: |
