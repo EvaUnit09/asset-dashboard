@@ -1,0 +1,79 @@
+name: Deploy to asset server
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-deploy:
+    runs-on: [self-hosted, windows, asset]
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+    # 1 Make Git trust the workspace -------------------------------------------------
+    - name: Trust workspace for Git
+      shell: cmd
+      run: git config --system --add safe.directory "E:/actions-runner/_work/asset-dashboard/asset-dashboard"
+
+    # 2 Check out code ---------------------------------------------------------------
+    - uses: actions/checkout@v4
+      with:
+        clean: true          # or path: src  (see fix ➋)
+
+    # 3 Copy Zscaler CA so Node / pip can use it ------------------------------------
+    - name: Add corporate CA bundle
+      shell: powershell
+      run: |
+        Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\actions-runner\ca-bundle.pem' -Force
+        
+
+    # ---------- Front-end ----------
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      env:
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
+      with:
+        # use an available version (20 LTS today) —
+        # change to 24.x once setup-node supports it
+        node-version: '20'
+
+    - name: Install dependencies & build
+      working-directory: frontend
+      env:
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
+      run: |
+        npm ci
+        npm run build
+
+    - name: Deploy static files to IIS site
+      run: |
+        robocopy frontend\dist E:\asset-app\site /MIR /XF web.config
+        if ($LASTEXITCODE -le 7) { exit 0 }  # 0-7 = success/warning
+        exit $LASTEXITCODE                    # 8+ = fail the job
+
+    # ---------- Back-end ----------
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      env:
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
+      with:
+        python-version: '3.12'
+
+    - name: Install backend requirements (venv)
+      working-directory: backend
+      run: |
+        E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
+        E:\asset-app\backend\.venv\Scripts\pip.exe install -r requirements.txt
+
+    # ---------- Restart service ----------
+    - name: Restart AssetBackend service
+      run: |
+        nssm restart AssetBackend
