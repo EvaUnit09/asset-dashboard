@@ -51,7 +51,7 @@ jobs:
 
     # ---------- Back-end ----------
     - name: Set up Python
-      uses: actions/setup-python@v5
+      # uses: actions/setup-python@v5
       env:
         NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
         REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
