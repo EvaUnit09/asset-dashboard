@@ -17,7 +17,7 @@ jobs:
 
     - name: Add corporate CA for Node
       run: |
-        copy C:\ZscalerRootCA.crt C:\ca-bundle.pem
+        copy E:\actions-runner\ZscalerRootCA.crt E:\actions-runner\ca-bundle.pem
       shell: powershell
         
 
@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies & build
       working-directory: frontend
       env:
-        NODE_EXTRA_CA_CERTS: C:\ca-bundle.pem
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
       run: |
         npm ci
         npm run build
