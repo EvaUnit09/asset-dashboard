@@ -15,6 +15,14 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v4
 
+    - name: Add corporate CA for Node
+      run: |
+        echo ------ Begin certificate ----- > C:\ZscalerRootCA.crt
+        echo MIID... CA_BASE64... >> C:\ZscalerRootCA.crt
+        echo ----- End certificate ------ >> C:\ZscalerRootCA.crt
+      shell: pwsh
+        
+
     # ---------- Front-end ----------
     - name: Set up Node
       uses: actions/setup-node@v4
@@ -25,6 +33,8 @@ jobs:
 
     - name: Install dependencies & build
       working-directory: frontend
+      env:
+        NODE_EXTRA_CA_CERTS: C:\ZscalerRootCA.crt
       run: |
         npm ci
         npm run build
