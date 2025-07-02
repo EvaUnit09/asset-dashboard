@@ -24,6 +24,10 @@ jobs:
     # ---------- Front-end ----------
     - name: Set up Node
       uses: actions/setup-node@v4
+      env:
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
       with:
         # use an available version (20 LTS today) —
         # change to 24.x once setup-node supports it
@@ -33,6 +37,8 @@ jobs:
       working-directory: frontend
       env:
         NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
       run: |
         npm ci
         npm run build
@@ -44,6 +50,10 @@ jobs:
     # ---------- Back-end ----------
     - name: Set up Python
       uses: actions/setup-python@v5
+      env:
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
       with:
         python-version: '3.12'
 
