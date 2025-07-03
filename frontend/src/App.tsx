@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";            
-import { Building2, Laptop, Activity, TrendingUp, Laptop2 } from 'lucide-react';
+import { Building2, Laptop, Activity, TrendingUp, Laptop2, GpuIcon } from 'lucide-react';
 import { AssetChart } from './components/AssetChart';
 import { StatusPieChart } from './components/StatusPieChart';
 import {TrendChart} from './components/TrendChart';
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [company,      setCompany]      = useState('all');
   const [manufacturer, setManufacturer] = useState('all');
   const [category,     setCategory]     = useState('all');
+  const [model,        setModel]        = useState('all');
 
 
   /* ---------- derived state ---------- */
@@ -32,14 +33,16 @@ export default function DashboardPage() {
         a =>
           (company      === 'all' || a.company      === company) &&
           (manufacturer === 'all' || a.manufacturer === manufacturer) &&
-          (category     === 'all' || a.category     === category)
+          (category     === 'all' || a.category     === category) &&
+          (model        === 'all' || a.model        === model)
       ),
-    [assets, company, manufacturer, category]
+    [assets, company, manufacturer, category, model]
   );
 
   const companies      = useMemo(() => [...new Set(assets.map(a => a.company))].filter((c): c is string => c != null),      [assets]);
   const manufacturers  = useMemo(() => [...new Set(assets.map(a => a.manufacturer))].filter((m): m is string => m != null), [assets]);
   const categories     = useMemo(() => [...new Set(assets.map(a => a.category))].filter((c): c is string => c != null),     [assets]);
+  const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null), [assets]);
 
   const stats = {
     total:    filtered.length,
@@ -90,12 +93,18 @@ export default function DashboardPage() {
               onChange={setCategory}
               options={categories}
             />
+            <FilterSelect
+              label="Model"
+              value={model}
+              onChange={setModel}
+              options={models}
+            />
           </div>
         </header>
 
         {/* Summary cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SummaryCard title="Total Assets" count={stats.total}    icon={Building2} border="border-l-blue-500"   />
+          <SummaryCard title="Total Assets" count={stats.total}    icon={GpuIcon} border="border-l-blue-500"   />
           <SummaryCard title="Active"        count={stats.active}   icon={Activity}  border="border-l-green-500"  />
           <SummaryCard title="Pending Rebuild"   count={stats['Pending Rebuild']} icon={TrendingUp}border="border-l-orange-500" />
           <SummaryCard title="In Stock"      count={stats.stock}    icon={Laptop}    border="border-l-purple-500"/>
@@ -164,7 +173,7 @@ function SummaryCard({
 }: {
   title: string;
   count: number;
-  icon: typeof Building2;
+  icon: typeof GpuIcon;
   border: string;
 }) {
   return (

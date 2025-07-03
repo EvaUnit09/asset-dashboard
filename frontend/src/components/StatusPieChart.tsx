@@ -52,7 +52,7 @@ export const StatusPieChart = ({ data }: StatusPieChartProps) => {
           <Tooltip 
             contentStyle={{ 
               backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
+              border: '1px solidrgb(230, 226, 240)',
               borderRadius: '8px',
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
             }}
