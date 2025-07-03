@@ -14,5 +14,6 @@ export interface Asset {
   company: string | null;
   purchase_date: string;
   created_at: string;
+  warranty_expires: string;
 }
 

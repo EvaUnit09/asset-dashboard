@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";            
-import { Building2, Laptop, Activity, TrendingUp, Laptop2, GpuIcon } from 'lucide-react';
+import { Building2, Laptop, Activity, TrendingUp, Laptop2, GpuIcon, PartyPopperIcon } from 'lucide-react';
 import { AssetChart } from './components/AssetChart';
 import { StatusPieChart } from './components/StatusPieChart';
 import {TrendChart} from './components/TrendChart';
 import {AssetTable} from './components/AssetTable';
 import { useAssets } from './hooks/useAssets';
+import { LaptopExpirationChart } from './components/LaptopExpirationChart';
 
 // ---- sample data (replace with API call later) -------------------------
 
@@ -122,6 +123,10 @@ export default function DashboardPage() {
 
         <ChartCard title="Monthly Asset Trends: (newly added devices by initial status)" icon={TrendingUp}>
           <TrendChart data={filtered} />
+        </ChartCard>
+
+        <ChartCard title="Warranty Expiration Trends" icon={PartyPopperIcon}>
+          <LaptopExpirationChart data={filtered} />
         </ChartCard>
 
         {/* Table */}
