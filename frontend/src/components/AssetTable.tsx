@@ -45,6 +45,7 @@ export const AssetTable = ({ data }: Props) => {
         a.company,
         a.location,
         a.status,
+        a.warranty_expires
       ]
         .filter(Boolean)
         .some((field) => field!.toLowerCase().includes(q)),
@@ -90,6 +91,7 @@ export const AssetTable = ({ data }: Props) => {
                 "Company",
                 "Location",
                 "Status",
+                "Warranty Expires"
               ].map((h) => (
                 <TableHead key={h} className="font-semibold">
                   {h}
@@ -124,6 +126,7 @@ export const AssetTable = ({ data }: Props) => {
                     {a.status}
                   </Badge>
                 </TableCell>
+                <TableCell className="text-slate-600">{a.warranty_expires}</TableCell>
               </TableRow>
             ))}
 
