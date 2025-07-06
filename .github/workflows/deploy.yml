@@ -24,7 +24,6 @@ jobs:
 
     # 3 Copy Zscaler CA so Node / pip can use it ------------------------------------
     - name: Add corporate CA bundle
-      shell: powershell
       run: |
         Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\actions-runner\ca-bundle.pem' -Force
         
@@ -77,21 +76,23 @@ jobs:
     # Create .env from secrets
     - name: Create .env from secrets
       run: |
-        echo DATABASE_URL=${{ secrets.MYSECRETS_DATABASE_URL }} > E:\asset-app\backend\.env
-        echo SNIPEIT_API_URL=${{ secrets.MYSECRETS_SNIPEIT_API_URL }} >> E:\asset-app\backend\.env
-        echo SNIPEIT_TOKEN=${{ secrets.MYSECRETS_SNIPEIT_TOKEN }} >> E:\asset-app\backend\.env
-        echo REQUESTS_CA_BUNDLE=E:\asset-app\backend\certs\ZscalerRootCA.pem >> E:\asset-app\backend\.env
+        echo "DATABASE_URL=${{ secrets.MYSECRETS_DATABASE_URL }}" > E:\asset-app\backend\.env
+        echo "SNIPEIT_API_URL=${{ secrets.MYSECRETS_SNIPEIT_API_URL }}" >> E:\asset-app\backend\.env
+        echo "SNIPEIT_TOKEN=${{ secrets.MYSECRETS_SNIPEIT_TOKEN }}" >> E:\asset-app\backend\.env
+        echo "REQUESTS_CA_BUNDLE=E:\asset-app\backend\certs\ZscalerRootCA.pem" >> E:\asset-app\backend\.env
 
     # Copy Zscaler cert
     - name: Copy Zscaler cert
       run: |
-        mkdir E:\asset-app\backend\certs 2>nul
-        copy E:\actions-runner\ZscalerRootCA.crt E:\asset-app\backend\certs\ZscalerRootCA.pem
+        New-Item -ItemType Directory -Path E:\asset-app\backend\certs -Force
+        Copy-Item E:\actions-runner\ZscalerRootCA.crt E:\asset-app\backend\certs\ZscalerRootCA.pem
 
     # Remove old virtual environment
     - name: Remove old virtual environment
       run: |
-        if (Test-Path E:\asset-app\backend\.venv) { Remove-Item E:\asset-app\backend\.venv -Recurse -Force -ErrorAction SilentlyContinue }
+        if (Test-Path E:\asset-app\backend\.venv) { 
+          Remove-Item E:\asset-app\backend\.venv -Recurse -Force -ErrorAction SilentlyContinue 
+        }
 
     # Create virtual environment
     - name: Create virtual environment
