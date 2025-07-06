@@ -73,6 +73,12 @@ jobs:
         E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
         E:\asset-app\backend\.venv\Scripts\pip.exe install -r requirements.txt
 
+    - name: Copy backend files
+      run: |
+        robocopy backend E:\asset-app\backend /MIR /XD __pycache__ /XF *.pyc
+        if ($LASTEXITCODE -le 7) { exit 0 }
+        exit $LASTEXITCODE
+
     # ---------- Restart service ----------
     - name: Restart AssetBackend service
       run: |
