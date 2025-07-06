@@ -84,7 +84,13 @@ jobs:
         New-Item -ItemType Directory -Path E:\asset-app\backend\certs -Force
         Copy-Item E:\actions-runner\ZscalerRootCA.crt E:\asset-app\backend\certs\ZscalerRootCA.pem
 
-    # Remove old virtual environment
+    # Stop service BEFORE venv operations
+    - name: Stop AssetBackend service
+      run: |
+        nssm stop AssetBackend
+      continue-on-error: true
+
+    # Remove old virtual environment (now service is stopped)
     - name: Remove old virtual environment
       run: |
         if (Test-Path E:\asset-app\backend\.venv) { 
@@ -96,7 +102,7 @@ jobs:
       run: |
         python -m venv E:\asset-app\backend\.venv
 
-    # Install backend requirements (NOW requirements.txt is available)
+    # Install backend requirements
     - name: Install backend requirements (venv)
       env:
         NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
@@ -106,9 +112,9 @@ jobs:
         E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
         E:\asset-app\backend\.venv\Scripts\pip.exe install -r E:\asset-app\backend\requirements.txt
 
-    # ---------- Restart service ----------
-    - name: Restart AssetBackend service
+    # Start service AFTER venv is ready
+    - name: Start AssetBackend service
       run: |
-        nssm restart AssetBackend
+        nssm start AssetBackend
       continue-on-error: true
 
