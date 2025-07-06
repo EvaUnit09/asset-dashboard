@@ -6,14 +6,19 @@ from .models import Asset
 from .routers.assets import router as assets_router
 from app.routers.sync import router as sync_router
 from fastapi.middleware.cors import CORSMiddleware
+from .scheduler import sync_scheduler
 
 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup
     SQLModel.metadata.create_all(engine)
+    sync_scheduler.start()
     yield
+    # Shutdown
+    sync_scheduler.stop()
 
 app = FastAPI(
     title="Asset Management API",

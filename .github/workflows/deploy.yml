@@ -66,43 +66,14 @@ jobs:
       with:
         python-version: '3.12'
 
-    # Copy backend files FIRST (but exclude .venv and .env)
+    # Copy backend files (exclude .venv to avoid permission issues)
     - name: Copy backend files
       run: |
-        robocopy backend E:\asset-app\backend /MIR /XD __pycache__ .venv /XF *.pyc .env
+        robocopy backend E:\asset-app\backend /MIR /XD __pycache__ .venv /XF *.pyc
         if ($LASTEXITCODE -le 7) { exit 0 }
         exit $LASTEXITCODE
 
-    # Create .env from single secret
-    - name: Create .env from single secret
-      run: |
-        [System.IO.File]::WriteAllText("E:\asset-app\backend\.env", "${{ secrets.MYSECRETS }}", [System.Text.Encoding]::UTF8)
-
-    # Copy Zscaler cert
-    - name: Copy Zscaler cert
-      run: |
-        New-Item -ItemType Directory -Path E:\asset-app\backend\certs -Force
-        Copy-Item E:\actions-runner\ZscalerRootCA.crt E:\asset-app\backend\certs\ZscalerRootCA.pem
-
-    # Stop service BEFORE venv operations
-    - name: Stop AssetBackend service
-      run: |
-        nssm stop AssetBackend
-      continue-on-error: true
-
-    # Remove old virtual environment (now service is stopped)
-    - name: Remove old virtual environment
-      run: |
-        if (Test-Path E:\asset-app\backend\.venv) { 
-          Remove-Item E:\asset-app\backend\.venv -Recurse -Force -ErrorAction SilentlyContinue 
-        }
-
-    # Create virtual environment
-    - name: Create virtual environment
-      run: |
-        python -m venv E:\asset-app\backend\.venv
-
-    # Install backend requirements
+    # Install/update requirements in existing venv
     - name: Install backend requirements (venv)
       env:
         NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
@@ -112,9 +83,9 @@ jobs:
         E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
         E:\asset-app\backend\.venv\Scripts\pip.exe install -r E:\asset-app\backend\requirements.txt
 
-    # Start service AFTER venv is ready
-    - name: Start AssetBackend service
+    # ---------- Restart service ----------
+    - name: Restart AssetBackend service
       run: |
-        nssm start AssetBackend
+        nssm restart AssetBackend
       continue-on-error: true
 

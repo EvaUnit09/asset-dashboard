@@ -1,161 +1,175 @@
 # Asset Sync Scheduling Setup
 
-This document describes how to set up automated syncing of assets from Snipe-IT to your PostgreSQL database every 4 hours from 8 AM to 8 PM.
+This document describes the automated syncing of assets from Snipe-IT to your PostgreSQL database every 4 hours from 8 AM to 8 PM using **APScheduler** integrated into your FastAPI application.
 
 ## Sync Times
 
-The sync will run at:
+The sync will run automatically at:
 - 8:00 AM
-- 12:00 PM (noon)
+- 12:00 PM (noon)  
 - 4:00 PM
 - 8:00 PM
 
-## Implementation Options
+## Implementation: APScheduler (In-Application)
 
-### Option 1: Windows Task Scheduler (Recommended)
+Your asset management system uses **APScheduler** for scheduling, which integrates directly into your FastAPI application.
 
-**Best for:** Production environments where reliability is critical.
+### **Advantages:**
+- ✅ Integrated with FastAPI application - no external dependencies
+- ✅ Starts automatically when your service starts
+- ✅ Programmatic control via API endpoints
+- ✅ Real-time monitoring through web interface
+- ✅ No complex file management or permissions issues
+- ✅ Uses your existing `.env` configuration
 
-**Advantages:**
-- Native Windows solution, very reliable
-- Excellent logging via Windows Event Viewer
-- No impact on FastAPI application performance
-- Easy to manage and monitor
+### **How It Works:**
+- The scheduler starts automatically when your FastAPI app starts
+- It runs in the background as part of your existing `AssetBackend` service
+- Sync jobs are configured using cron triggers for precise timing
+- All logging goes through your existing application logs
 
-**Setup Steps:**
+## API Endpoints
 
-1. **Install dependencies** (if using APScheduler option later):
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
+Your application provides API endpoints to control and monitor the sync:
 
-2. **Run the setup script as Administrator**:
-   ```powershell
-   cd backend
-   .\setup_sync_schedule.ps1
-   ```
+### **Manual Control:**
+- `POST /sync/now` - Trigger sync immediately
+- `POST /sync` - Trigger sync as background task
 
-3. **Or set up manually via Task Scheduler GUI**:
-   - Open Task Scheduler (`taskschd.msc`)
-   - Create Basic Task
-   - Set triggers for 8:00 AM, 12:00 PM, 4:00 PM, and 8:00 PM
-   - Set action to run `python.exe "C:\path\to\backend\scheduled_sync.py"`
+### **Scheduler Management:**
+- `GET /sync/schedule` - View next scheduled runs and scheduler status
+- `POST /sync/scheduler/start` - Start the scheduler
+- `POST /sync/scheduler/stop` - Stop the scheduler
 
-**Monitoring:**
-- Logs are saved to `backend/logs/sync_YYYYMMDD.log`
-- Windows Event Viewer for task execution status
-- PowerShell commands:
-  ```powershell
-  Get-ScheduledTask -TaskName "AssetSync"
-  Get-ScheduledTaskInfo -TaskName "AssetSync"
-  ```
+### **Example Usage:**
+```bash
+# Check scheduler status
+curl http://localhost:8000/sync/schedule
 
-### Option 2: APScheduler (In-Application)
+# Trigger manual sync
+curl -X POST http://localhost:8000/sync/now
 
-**Best for:** Development environments or when you want programmatic control.
-
-**Advantages:**
-- Integrated with FastAPI application
-- Programmatic control via API endpoints
-- Real-time monitoring through web interface
-
-**Setup Steps:**
-
-1. **Install dependencies**:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
-
-2. **The scheduler starts automatically with your FastAPI app**
-
-3. **API endpoints available**:
-   - `POST /sync/now` - Trigger sync immediately
-   - `GET /sync/schedule` - View next scheduled runs
-   - `POST /sync/scheduler/start` - Start scheduler
-   - `POST /sync/scheduler/stop` - Stop scheduler
-
-**Monitoring:**
-- Check scheduler status: `GET /sync/schedule`
-- Application logs will contain sync information
-- Monitor via your existing application monitoring
+# View next scheduled runs
+curl http://localhost:8000/sync/schedule
+```
 
 ## Configuration
 
 ### Environment Variables
 
-Make sure these are set in your `.env` file:
+Your existing `.env` file is used automatically:
 ```
 DATABASE_URL=postgresql://username:password@localhost:5432/assetdb
 SNIPEIT_API_URL=https://your-snipeit-instance.com/api/v1
 SNIPEIT_TOKEN=your-api-token
+REQUESTS_CA_BUNDLE=E:\actions-runner\ZscalerRootCA.crt
 ```
 
 ### Logging
 
-Both options provide comprehensive logging:
+The scheduler provides comprehensive logging through your FastAPI application:
 - Sync start/end times
-- Success/failure status
+- Success/failure status  
 - Error details if sync fails
 - Performance metrics (duration)
+- Job execution events
 
-## Manual Sync
+## Deployment
 
-You can trigger a sync manually using any of these methods:
+### **Automatic Deployment**
+Your GitHub Actions workflow handles everything automatically:
+1. ✅ Deploys the updated code
+2. ✅ Installs APScheduler dependency
+3. ✅ Restarts the AssetBackend service
+4. ✅ Scheduler starts automatically with the service
 
-1. **Command line**:
-   ```bash
-   cd backend
-   python scheduled_sync.py
-   ```
+### **No Manual Steps Required**
+Unlike traditional cron jobs or Windows Task Scheduler, there's no manual setup needed:
+- No task creation
+- No file permissions to manage
+- No separate environment configuration
+- No certificate copying
 
-2. **API endpoint** (if using APScheduler):
-   ```bash
-   curl -X POST http://localhost:8000/sync/now
-   ```
+## Monitoring
 
-3. **Windows Task Scheduler**:
-   ```powershell
-   Start-ScheduledTask -TaskName "AssetSync"
-   ```
+### **Real-time Status**
+```bash
+# Check if scheduler is running and view next sync times
+curl http://localhost:8000/sync/schedule
+```
+
+Example response:
+```json
+{
+  "next_scheduled_runs": {
+    "Asset Sync 08:00": "2025-01-31T08:00:00",
+    "Asset Sync 12:00": "2025-01-31T12:00:00", 
+    "Asset Sync 16:00": "2025-01-31T16:00:00",
+    "Asset Sync 20:00": "2025-01-31T20:00:00"
+  },
+  "scheduler_running": true
+}
+```
+
+### **Application Logs**
+Monitor sync activity through your existing application logs:
+- NSSM service logs
+- Application stdout/stderr
+- Windows Event Viewer (for service events)
 
 ## Troubleshooting
 
-### Common Issues
+### **Common Issues**
 
-1. **Import errors**: Ensure all dependencies are installed
-2. **Database connection**: Check `DATABASE_URL` environment variable
-3. **API errors**: Verify `SNIPEIT_API_URL` and `SNIPEIT_TOKEN`
-4. **Permissions**: Windows Task Scheduler may need elevated permissions
+1. **Scheduler not running**: Check if AssetBackend service is running
+2. **Sync failures**: Check application logs for database/API connectivity
+3. **Missed schedules**: Scheduler automatically handles missed runs with grace period
 
-### Log Analysis
+### **Quick Diagnostics**
 
-Check the logs for:
-- Connection errors to Snipe-IT API
-- Database connection issues
-- Sync duration (should be reasonable)
-- Number of assets processed
+```bash
+# Check service status
+Get-Service -Name "AssetBackend"
 
-### Performance Considerations
+# Check scheduler status via API
+curl http://localhost:8000/sync/schedule
 
-- Sync duration depends on number of assets
-- Consider rate limiting if API responses are slow
-- Monitor database performance during sync operations
+# Trigger manual sync to test
+curl -X POST http://localhost:8000/sync/now
+```
 
-## Production Recommendations
+### **Restart Scheduler**
+If needed, restart the scheduler without restarting the entire service:
 
-For production environments:
+```bash
+# Stop scheduler
+curl -X POST http://localhost:8000/sync/scheduler/stop
 
-1. **Use Windows Task Scheduler** (Option 1)
-2. **Set up monitoring** alerts for failed syncs
-3. **Regular log rotation** to prevent disk space issues
-4. **Test sync process** before deploying to production
-5. **Have rollback plan** in case of sync issues
+# Start scheduler  
+curl -X POST http://localhost:8000/sync/scheduler/start
+```
 
-## Security Considerations
+## Benefits Over External Schedulers
 
-- Store API tokens securely (use environment variables)
-- Run scheduled tasks with minimum required permissions
-- Monitor for suspicious sync activity
-- Regular security updates for all dependencies 
+### **Compared to Windows Task Scheduler:**
+- ✅ No complex setup or permissions
+- ✅ Better integration with application lifecycle
+- ✅ Real-time control and monitoring
+- ✅ Automatic startup/shutdown with service
+
+### **Compared to Cron Jobs:**
+- ✅ Platform independent
+- ✅ Integrated logging and error handling
+- ✅ Dynamic control without editing system files
+- ✅ Better suited for Windows environments
+
+## Security
+
+- Uses existing application authentication and environment variables
+- No separate credential management needed
+- Runs within application security context
+- All API endpoints can be secured with your existing auth system
+
+---
+
+**Summary:** Your sync is fully automated and integrated into your FastAPI application. No manual setup required - just deploy and it works! 
