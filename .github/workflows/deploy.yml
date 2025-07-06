@@ -73,13 +73,10 @@ jobs:
         if ($LASTEXITCODE -le 7) { exit 0 }
         exit $LASTEXITCODE
 
-    # Create .env from secrets
-    - name: Create .env from secrets
+    # Create .env from single secret
+    - name: Create .env from single secret
       run: |
-        echo "DATABASE_URL=${{ secrets.MYSECRETS_DATABASE_URL }}" > E:\asset-app\backend\.env
-        echo "SNIPEIT_API_URL=${{ secrets.MYSECRETS_SNIPEIT_API_URL }}" >> E:\asset-app\backend\.env
-        echo "SNIPEIT_TOKEN=${{ secrets.MYSECRETS_SNIPEIT_TOKEN }}" >> E:\asset-app\backend\.env
-        echo "REQUESTS_CA_BUNDLE=E:\asset-app\backend\certs\ZscalerRootCA.pem" >> E:\asset-app\backend\.env
+        echo "${{ secrets.MYSECRETS }}" > E:\asset-app\backend\.env
 
     # Copy Zscaler cert
     - name: Copy Zscaler cert
