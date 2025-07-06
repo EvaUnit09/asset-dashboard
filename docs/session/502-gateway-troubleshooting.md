@@ -73,6 +73,14 @@ database_url
 
 **Root Cause**: `snipeit.py` was hardcoded to use `certifi.where()` instead of checking for custom CA bundle setting.
 
+### 5. Certificate Path Mismatch Issue  
+**Problem**: Backend looking for certificate at `E:\asset-app\backend\certs\ZscalerRootCA.pem` but file doesn't exist
+- `requests_ca_bundle` setting in `MYSECRETS` points to non-existent path
+- GitHub Actions copies certificate to `E:\actions-runner\ca-bundle.pem` 
+- Backend expects it at `E:\asset-app\backend\certs\ZscalerRootCA.pem`
+
+**Error**: `OSError: Could not find a suitable TLS CA certificate bundle, invalid path: E:\asset-app\backend\certs\ZscalerRootCA.pem`
+
 ## Immediate Solution
 Create the missing `.env` file on the server:
 
@@ -181,12 +189,13 @@ Create a version of main.py without the scheduler to test if that's the issue.
 2. ✅ **Identified BOM issue**: .env file created with BOM causing field name corruption
 3. ✅ **Identified IIS routing issue**: Missing proxy configuration and incorrect URL
 4. ✅ **Identified SSL certificate issue**: Backend not using custom CA bundle
-5. ✅ **Fixed GitHub Actions workflow**: Creates .env file without BOM, deploys correct web.config
-6. ✅ **Fixed backend SSL configuration**: Uses custom CA bundle from settings
-7. ✅ **Fixed IIS configuration**: Added proxy settings and correct backend URL
-8. 🔄 **Deploy to apply all fixes** (or fix manually)
-9. 🔄 **Test backend startup**
-10. 🔄 **Restart service and test API**
+5. ✅ **Identified certificate path mismatch**: Certificate not found at expected path
+6. ✅ **Fixed GitHub Actions workflow**: Creates .env file without BOM, deploys correct web.config, copies certificate to expected location
+7. ✅ **Fixed backend SSL configuration**: Uses custom CA bundle from settings
+8. ✅ **Fixed IIS configuration**: Added proxy settings and correct backend URL
+9. 🔄 **Deploy to apply all fixes** (or fix manually)
+10. 🔄 **Test backend startup**
+11. 🔄 **Restart service and test API**
 
 ## Manual Fix for Current Server (if needed)
 If you need to fix the current issues on the server immediately:
@@ -256,6 +265,16 @@ nssm restart AssetBackend
 iisreset /noforce
 ```
 
+### Fix 3: Certificate path issue
+```powershell
+# Create the certs directory and copy the certificate
+New-Item -ItemType Directory -Force -Path 'E:\asset-app\backend\certs'
+Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\asset-app\backend\certs\ZscalerRootCA.pem' -Force
+
+# Alternatively, update your MYSECRETS to use the correct path:
+# requests_ca_bundle=E:\actions-runner\ca-bundle.pem
+```
+
 ## Application Structure
 ```
 E:\
@@ -272,6 +291,6 @@ E:\
 
 ## Files Modified
 - `docs/session/502-gateway-troubleshooting.md` - ✅ Updated with complete issue analysis and resolution
-- `.github/workflows/deploy.yml` - ✅ Updated to create .env file without BOM and deploy correct web.config
+- `.github/workflows/deploy.yml` - ✅ Updated to create .env file without BOM, deploy correct web.config, and copy certificate to expected location
 - `backend/app/snipeit.py` - ✅ Updated to use custom CA bundle from settings instead of hardcoded certifi
 - `site/web.config` - ✅ Updated to include proxy settings and use 127.0.0.1 instead of localhost 

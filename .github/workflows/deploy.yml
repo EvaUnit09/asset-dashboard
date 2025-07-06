@@ -26,6 +26,9 @@ jobs:
     - name: Add corporate CA bundle
       run: |
         Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\actions-runner\ca-bundle.pem' -Force
+        # Also copy to backend certs directory for backward compatibility
+        New-Item -ItemType Directory -Force -Path 'E:\asset-app\backend\certs'
+        Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\asset-app\backend\certs\ZscalerRootCA.pem' -Force
         
 
     # ---------- Front-end ----------
