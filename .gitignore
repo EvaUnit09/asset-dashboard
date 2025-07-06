@@ -27,3 +27,9 @@ dist-ssr
 *.sw?
 *.env
 .env
+*.docs
+docs/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
