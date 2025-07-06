@@ -79,6 +79,14 @@ jobs:
         if ($LASTEXITCODE -le 7) { exit 0 }
         exit $LASTEXITCODE
 
+    - name: Copy .env file
+      run: copy backend\.env E:\asset-app\backend\.env
+
+    - name: Copy Zscaler cert
+      run: |
+        mkdir E:\asset-app\backend\certs 2>nul
+        copy E:\actions-runner\ZscalerRootCA.crt E:\asset-app\backend\certs\ZscalerRootCA.pem
+
     # ---------- Restart service ----------
     - name: Restart AssetBackend service
       run: |
