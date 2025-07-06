@@ -67,11 +67,18 @@ jobs:
       with:
         python-version: '3.12'
 
+    - name: Remove old virtual environment
+      run: |
+        if exist E:\asset-app\backend\.venv rmdir /s /q E:\asset-app\backend\.venv
+
+    - name: Create virtual environment
+      run: |
+        python -m venv E:\asset-app\backend\.venv
+
     - name: Install backend requirements (venv)
-      working-directory: backend
       run: |
         E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
-        E:\asset-app\backend\.venv\Scripts\pip.exe install -r requirements.txt
+        E:\asset-app\backend\.venv\Scripts\pip.exe install -r E:\asset-app\backend\requirements.txt
 
     - name: Copy backend files
       run: |
