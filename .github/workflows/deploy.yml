@@ -73,6 +73,16 @@ jobs:
         if ($LASTEXITCODE -le 7) { exit 0 }
         exit $LASTEXITCODE
 
+    # Create .env file from GitHub secrets
+    - name: Create .env file
+      run: |
+        $envContent = @"
+        ${{ secrets.MYSECRETS }}
+        requests_ca_bundle=E:\actions-runner\ca-bundle.pem
+        echo_sql=false
+        "@
+        [System.IO.File]::WriteAllText("E:\asset-app\backend\.env", $envContent, [System.Text.Encoding]::UTF8)
+
     # Install/update requirements in existing venv
     - name: Install backend requirements (venv)
       env:
