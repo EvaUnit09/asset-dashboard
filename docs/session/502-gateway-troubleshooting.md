@@ -55,6 +55,24 @@ database_url
   Extra inputs are not permitted [type=extra_forbidden, input_value='postgresql+psycopg://adm...@127.0.0.1:5433/assetdb', input_type=str]
 ```
 
+## ADDITIONAL ISSUES IDENTIFIED ✅
+
+### 3. IIS Routing Configuration Issue
+**Problem**: IIS error `0x80072efd` showing it's trying to serve API requests from static files instead of proxying to backend.
+- `site/web.config` was missing `<proxy enabled="true" preserveHostHeader="false" />` 
+- Using `localhost` instead of `127.0.0.1` in rewrite URL
+- Frontend's correct `web.config` was not being deployed to site root
+
+**Error**: `Physical Path E:\asset-app\site\dist\api\assets` - showing IIS treating API as static file
+
+### 4. SSL Certificate Issue in Backend
+**Problem**: Backend using `certifi.where()` instead of custom CA bundle from settings
+- Snipe-IT API calls failing with SSL certificate verification errors
+- `requests.exceptions.SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed`
+- Code was ignoring `settings.requests_ca_bundle` configuration
+
+**Root Cause**: `snipeit.py` was hardcoded to use `certifi.where()` instead of checking for custom CA bundle setting.
+
 ## Immediate Solution
 Create the missing `.env` file on the server:
 
@@ -161,14 +179,19 @@ Create a version of main.py without the scheduler to test if that's the issue.
 ## Resolution Steps
 1. ✅ **Identified root cause**: Missing environment variables
 2. ✅ **Identified BOM issue**: .env file created with BOM causing field name corruption
-3. ✅ **Update GitHub Actions workflow to create .env file without BOM** (Fixed UTF8 encoding)
-4. 🔄 **Deploy to create new .env file without BOM** (or fix manually)
-5. 🔄 **Test backend startup**
-6. 🔄 **Restart service and test API**
+3. ✅ **Identified IIS routing issue**: Missing proxy configuration and incorrect URL
+4. ✅ **Identified SSL certificate issue**: Backend not using custom CA bundle
+5. ✅ **Fixed GitHub Actions workflow**: Creates .env file without BOM, deploys correct web.config
+6. ✅ **Fixed backend SSL configuration**: Uses custom CA bundle from settings
+7. ✅ **Fixed IIS configuration**: Added proxy settings and correct backend URL
+8. 🔄 **Deploy to apply all fixes** (or fix manually)
+9. 🔄 **Test backend startup**
+10. 🔄 **Restart service and test API**
 
 ## Manual Fix for Current Server (if needed)
-If you need to fix the current .env file on the server immediately:
+If you need to fix the current issues on the server immediately:
 
+### Fix 1: .env file BOM issue
 ```powershell
 # Navigate to backend directory
 cd E:\asset-app\backend
@@ -180,9 +203,57 @@ Copy-Item .env .env.bak
 $content = Get-Content .env -Raw
 $utf8NoBom = New-Object System.Text.UTF8Encoding $False
 [System.IO.File]::WriteAllText("E:\asset-app\backend\.env", $content, $utf8NoBom)
+```
 
-# Restart the service
+### Fix 2: IIS web.config proxy settings
+```powershell
+# Navigate to site directory
+cd E:\asset-app\site
+
+# Backup current web.config
+Copy-Item web.config web.config.bak
+
+# Update web.config with proxy settings
+$webConfigContent = @"
+<configuration>
+  <system.webServer>
+    <proxy enabled="true" preserveHostHeader="false" />
+    <rewrite>
+      <rules>
+        <rule name="API to Backend" stopProcessing="true">
+          <match url="^api/(.*)" />
+          <action type="Rewrite"
+                  url="http://127.0.0.1:8000/{R:1}"
+                  logRewrittenUrl="true" />
+          <serverVariables>
+            <set name="HTTP_X_FORWARDED_PROTO" value="http" />
+          </serverVariables>
+        </rule>
+
+        <rule name="SPA fallback" stopProcessing="true">
+          <match url=".*" />
+          <conditions logicalGrouping="MatchAll">
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="/index.html" />
+        </rule>
+      </rules>
+    </rewrite>
+  </system.webServer>
+</configuration>
+"@
+
+[System.IO.File]::WriteAllText("E:\asset-app\site\web.config", $webConfigContent)
+```
+
+### Apply all fixes
+```powershell
+# Restart the backend service
 nssm restart AssetBackend
+
+# Restart IIS (or just the site)
+iisreset /noforce
 ```
 
 ## Application Structure
@@ -200,5 +271,7 @@ E:\
 ```
 
 ## Files Modified
-- `docs/session/502-gateway-troubleshooting.md` - ✅ Updated with BOM issue analysis and resolution
-- `.github/workflows/deploy.yml` - ✅ Updated to create .env file using MYSECRETS without BOM 
+- `docs/session/502-gateway-troubleshooting.md` - ✅ Updated with complete issue analysis and resolution
+- `.github/workflows/deploy.yml` - ✅ Updated to create .env file without BOM and deploy correct web.config
+- `backend/app/snipeit.py` - ✅ Updated to use custom CA bundle from settings instead of hardcoded certifi
+- `site/web.config` - ✅ Updated to include proxy settings and use 127.0.0.1 instead of localhost 

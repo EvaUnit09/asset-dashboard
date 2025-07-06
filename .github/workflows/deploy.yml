@@ -55,6 +55,10 @@ jobs:
         robocopy frontend\dist E:\asset-app\site\dist /MIR
         if ($LASTEXITCODE -le 7) { exit 0 }  # 0-7 = success/warning
         exit $LASTEXITCODE                    # 8+ = fail the job
+    
+    - name: Deploy web.config to site root
+      run: |
+        Copy-Item frontend\public\web.config E:\asset-app\site\web.config -Force
 
     # ---------- Back-end ----------
     - name: Set up Python

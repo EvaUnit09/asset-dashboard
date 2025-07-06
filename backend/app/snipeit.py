@@ -1,12 +1,14 @@
 import requests, os, certifi
-
-CA_BUNDLE = certifi.where()
 from typing import Generator
 
 from .settings import settings
 
-os.environ['SSL_CERT_FILE'] = certifi.where()
-os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+# Use custom CA bundle if provided, otherwise use default certifi bundle
+CA_BUNDLE = settings.requests_ca_bundle if settings.requests_ca_bundle else certifi.where()
+
+# Set environment variables for SSL
+os.environ['SSL_CERT_FILE'] = CA_BUNDLE
+os.environ['REQUESTS_CA_BUNDLE'] = CA_BUNDLE
 
 HEADERS = {
     "Authorization": f"Bearer {settings.snipeit_token}",
