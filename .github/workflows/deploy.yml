@@ -69,7 +69,7 @@ jobs:
 
     - name: Remove old virtual environment
       run: |
-        if exist E:\asset-app\backend\.venv rmdir /s /q E:\asset-app\backend\.venv
+        if (Test-Path E:\asset-app\backend\.venv) { Remove-Item E:\asset-app\backend\.venv -Recurse -Force }
 
     - name: Create virtual environment
       run: |
