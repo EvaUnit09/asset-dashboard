@@ -81,7 +81,9 @@ jobs:
         requests_ca_bundle=E:\actions-runner\ca-bundle.pem
         echo_sql=false
         "@
-        [System.IO.File]::WriteAllText("E:\asset-app\backend\.env", $envContent, [System.Text.Encoding]::UTF8)
+        # Use UTF8 without BOM to avoid pydantic field name issues
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $False
+        [System.IO.File]::WriteAllText("E:\asset-app\backend\.env", $envContent, $utf8NoBom)
 
     # Install/update requirements in existing venv
     - name: Install backend requirements (venv)

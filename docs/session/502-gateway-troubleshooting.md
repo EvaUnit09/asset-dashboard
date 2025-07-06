@@ -10,6 +10,8 @@
 - IIS for frontend hosting
 - NSSM for backend service management
 - Backend runs on FastAPI with uvicorn
+- Application deployed to E:\ drive
+- Logs location: E:\Asset-app\logs
 
 ## Investigation Steps
 1. Check backend service status and logs
@@ -39,6 +41,20 @@ snipeit_api_url: Field required
 snipeit_token: Field required
 ```
 
+## SECONDARY ISSUE IDENTIFIED ✅
+**BOM (Byte Order Mark) Issue**: The `.env` file was being created with a BOM character, causing pydantic to see `\ufeffdatabase_url` instead of `database_url`. This leads to validation errors:
+- `database_url` Field required (because it's looking for `database_url` but finding `\ufeffdatabase_url`)
+- `\ufeffdatabase_url` Extra inputs are not permitted (because this field with BOM doesn't match expected field name)
+
+Error message:
+```
+pydantic_core._pydantic_core.ValidationError: 2 validation errors for Settings
+database_url
+  Field required [type=missing, input_value={'snipeit_api_url': 'http...127.0.0.1:5433/assetdb'}, input_type=dict]
+\ufeffdatabase_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='postgresql+psycopg://adm...@127.0.0.1:5433/assetdb', input_type=str]
+```
+
 ## Immediate Solution
 Create the missing `.env` file on the server:
 
@@ -55,6 +71,9 @@ snipeit_token=your-snipeit-api-token
 requests_ca_bundle=E:\actions-runner\ca-bundle.pem
 echo_sql=false
 "@ | Out-File -FilePath .env -Encoding utf8NoBOM
+
+# Verify the .env file was created
+Get-Content .env
 ```
 
 ### 2. Update GitHub Actions workflow ✅
@@ -62,7 +81,9 @@ The deployment workflow has been updated to create the .env file from your exist
 
 1. Use the content from `MYSECRETS` secret (containing database_url, snipeit_api_url, snipeit_token)
 2. Add the `requests_ca_bundle` and `echo_sql` entries
-3. Write the complete .env file during deployment
+3. Write the complete .env file during deployment **without BOM** to avoid pydantic field name issues
+
+Key fix: Using UTF8 encoding without BOM (`$utf8NoBom = New-Object System.Text.UTF8Encoding $False`) to prevent the `\ufeffdatabase_url` field name corruption.
 
 No additional GitHub secrets needed - it uses your existing `MYSECRETS` secret!
 
@@ -79,6 +100,9 @@ Get-Service AssetBackend
 
 ### 2. Check Service Logs
 ```powershell
+# Check application logs
+Get-Content "E:\Asset-app\logs\*.log" -Tail 50
+
 # Check NSSM logs (if configured)
 # Default location: C:\Windows\System32\LogFiles\NSSM\
 Get-Content "C:\Windows\System32\LogFiles\NSSM\AssetBackend_*.log" -Tail 50
@@ -119,6 +143,15 @@ E:\asset-app\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0
 E:\asset-app\backend\.venv\Scripts\pip.exe list | findstr apscheduler
 ```
 
+### 7. Check Log Files
+```powershell
+# Check application logs for errors
+Get-Content "E:\Asset-app\logs\*.log" -Tail 20 | Where-Object { $_ -match "error|exception|failed" }
+
+# Check all recent log entries
+Get-ChildItem "E:\Asset-app\logs\*.log" | Get-Content -Tail 50
+```
+
 ## Quick Fix Attempt
 If the service is failing to start due to the scheduler, we can temporarily disable it:
 
@@ -127,11 +160,45 @@ Create a version of main.py without the scheduler to test if that's the issue.
 
 ## Resolution Steps
 1. ✅ **Identified root cause**: Missing environment variables
-2. 🔄 **Create .env file manually on server**
-3. ✅ **Update GitHub Actions workflow to create .env file** (Updated to use MYSECRETS)
-4. 🔄 **Test backend startup**
-5. 🔄 **Restart service and test API**
+2. ✅ **Identified BOM issue**: .env file created with BOM causing field name corruption
+3. ✅ **Update GitHub Actions workflow to create .env file without BOM** (Fixed UTF8 encoding)
+4. 🔄 **Deploy to create new .env file without BOM** (or fix manually)
+5. 🔄 **Test backend startup**
+6. 🔄 **Restart service and test API**
+
+## Manual Fix for Current Server (if needed)
+If you need to fix the current .env file on the server immediately:
+
+```powershell
+# Navigate to backend directory
+cd E:\asset-app\backend
+
+# Backup current .env file
+Copy-Item .env .env.bak
+
+# Read current content and recreate without BOM
+$content = Get-Content .env -Raw
+$utf8NoBom = New-Object System.Text.UTF8Encoding $False
+[System.IO.File]::WriteAllText("E:\asset-app\backend\.env", $content, $utf8NoBom)
+
+# Restart the service
+nssm restart AssetBackend
+```
+
+## Application Structure
+```
+E:\
+├── asset-app\
+│   ├── backend\           # FastAPI backend application
+│   │   ├── .venv\        # Python virtual environment
+│   │   ├── .env          # Environment variables (created by deployment)
+│   │   └── app\          # Application code
+│   ├── logs\             # Application log files
+│   └── site\             # Frontend static files (IIS)
+└── actions-runner\       # GitHub Actions runner
+    └── ca-bundle.pem     # Certificate bundle
+```
 
 ## Files Modified
-- `docs/session/502-gateway-troubleshooting.md` - Documentation
-- `.github/workflows/deploy.yml` - ✅ Updated to create .env file using MYSECRETS 
+- `docs/session/502-gateway-troubleshooting.md` - ✅ Updated with BOM issue analysis and resolution
+- `.github/workflows/deploy.yml` - ✅ Updated to create .env file using MYSECRETS without BOM 
