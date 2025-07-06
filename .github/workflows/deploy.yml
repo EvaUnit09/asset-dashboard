@@ -76,7 +76,7 @@ jobs:
     # Create .env from single secret
     - name: Create .env from single secret
       run: |
-        Set-Content -Path E:\asset-app\backend\.env -Value "${{ secrets.MYSECRETS }}" -Encoding utf8
+        Set-Content -Path E:\asset-app\backend\.env -Value "${{ secrets.MYSECRETS }}" -Encoding utf8NoBOM
 
     # Copy Zscaler cert
     - name: Copy Zscaler cert
