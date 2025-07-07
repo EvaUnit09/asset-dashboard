@@ -490,7 +490,7 @@ Get-Process | Where-Object {$_.ProcessName -like "*python*"} | Select-Object Pro
    Get-Service postgresql-x64-16
    
    # Check database logs
-   Get-Content "C:\Program Files\PostgreSQL\16\data\pg_log\*.log" -Tail 50
+   Get-Content "C:\Program Files\PostgreSQL\16\data\log\*.log" -Tail 50
    
    # Test database connection
    python -c "from app.db import engine; print('DB OK')"
@@ -499,25 +499,26 @@ Get-Process | Where-Object {$_.ProcessName -like "*python*"} | Select-Object Pro
 2. **SSL Certificate Issues**
    ```powershell
    # Check IIS logs
-   Get-Content "C:\inetpub\logs\LogFiles\W3SVC1\*.log" -Tail 100
-   
+    Get-Content "E:\asset-app\logs\IIS logs\W3SVC2\*.log" -Tail 50 
+
    # Verify domain configuration
-   nslookup your-domain.com
+    nslookup asset-ny.worldwide.bbc.co.uk 
+
    
    # Check certificate binding
-   Get-WebBinding -Name "AssetManagement" -Protocol "https"
+   Get-WebBinding -Name "AssetUI" -Protocol "https"
    ```
 
 3. **Service Startup Issues**
    ```powershell
    # Check service status
-   Get-Service AssetManagementBackend
+   Get-Service AssetBackend
    
    # Restart specific service
-   Restart-Service AssetManagementBackend
+   Restart-Service AssetBackend
    
    # Check service logs
-   Get-Content "C:\logs\asset-backend-error.log" -Tail 50
+   Get-Content "E:\logs\asset-backend-error.log" -Tail 50
    ```
 
 ### Debug Commands
@@ -534,7 +535,7 @@ Test-NetConnection -ComputerName localhost -Port 5432
 Get-ChildItem Env: | Where-Object {$_.Name -like "*ASSET*" -or $_.Name -like "*DATABASE*"}
 
 # Check IIS application pool
-Get-IISAppPool -Name "AssetManagement"
+Get-IISAppPool -Name "AssetUI"
 ```
 
 ## Security Considerations
@@ -586,7 +587,7 @@ Get-IISAppPool -Name "AssetManagement"
    # Configure Windows Event Log rotation
    # Use Windows Task Scheduler to archive old logs
    # Clean up old log files
-   Get-ChildItem "C:\logs\*.log" | Where-Object {$_.LastWriteTime -lt (Get-Date).AddDays(-30)} | Remove-Item
+   Get-ChildItem "E:\asset-app\logs\*.log" | Where-Object {$_.LastWriteTime -lt (Get-Date).AddDays(-30)} | Remove-Item
    ```
 
 ### Update Procedures

@@ -81,6 +81,8 @@ database_url
 
 **Error**: `OSError: Could not find a suitable TLS CA certificate bundle, invalid path: E:\asset-app\backend\certs\ZscalerRootCA.pem`
 
+**Resolution**: Certificate was copied to `backend\certs\` directory but with `.crt` extension instead of `.pem`. Manual rename from `ZscalerRootCA.crt` to `ZscalerRootCA.pem` resolved the issue and backend started successfully.
+
 ## Immediate Solution
 Create the missing `.env` file on the server:
 
@@ -193,9 +195,10 @@ Create a version of main.py without the scheduler to test if that's the issue.
 6. ✅ **Fixed GitHub Actions workflow**: Creates .env file without BOM, deploys correct web.config, copies certificate to expected location
 7. ✅ **Fixed backend SSL configuration**: Uses custom CA bundle from settings
 8. ✅ **Fixed IIS configuration**: Added proxy settings and correct backend URL
-9. 🔄 **Deploy to apply all fixes** (or fix manually)
-10. 🔄 **Test backend startup**
-11. 🔄 **Restart service and test API**
+9. ✅ **Deploy to apply all fixes** (certificate copied to backend/certs/ directory)
+10. ✅ **Manual certificate extension fix** (renamed .crt to .pem)
+11. ✅ **Backend startup successful** (backend now running properly)
+12. 🔄 **Test API endpoints and complete functionality**
 
 ## Manual Fix for Current Server (if needed)
 If you need to fix the current issues on the server immediately:
@@ -270,6 +273,11 @@ iisreset /noforce
 # Create the certs directory and copy the certificate
 New-Item -ItemType Directory -Force -Path 'E:\asset-app\backend\certs'
 Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\asset-app\backend\certs\ZscalerRootCA.pem' -Force
+
+# If the file was copied as .crt instead of .pem, rename it:
+if (Test-Path 'E:\asset-app\backend\certs\ZscalerRootCA.crt') {
+    Move-Item 'E:\asset-app\backend\certs\ZscalerRootCA.crt' 'E:\asset-app\backend\certs\ZscalerRootCA.pem' -Force
+}
 
 # Alternatively, update your MYSECRETS to use the correct path:
 # requests_ca_bundle=E:\actions-runner\ca-bundle.pem
