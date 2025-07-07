@@ -8,23 +8,19 @@ interface StatusPieChartProps {
 
 const STATUS_COLORS = {
   Active: '#10b981',
-  Damaged: '#641E16',
   Stock: '#3498DB',
-  Disposed: '#ef4444',
-  'Pending Rebuild': '#DC7633',
-  'Pre-Disposal': '#808b96',
-  'Allocated': '#2c3e50',
-  Broken: '#808b96',
-  Lost: '#808b96',
-  Repair: '#808b96',
-  Stolen: '#808b96'
+  'Pending Rebuild': '#DC7633'
 };
 
 export const StatusPieChart = ({ data }: StatusPieChartProps) => {
-  const statusData = data.reduce((acc, asset) => {
-    acc[asset.status] = (acc[asset.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const allowedStatuses = ['Active', 'Stock', 'Pending Rebuild'];
+  
+  const statusData = data
+    .filter(asset => allowedStatuses.includes(asset.status))
+    .reduce((acc, asset) => {
+      acc[asset.status] = (acc[asset.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
   const chartData = Object.entries(statusData).map(([status, count]) => ({
     name: status.charAt(0).toUpperCase() + status.slice(1),

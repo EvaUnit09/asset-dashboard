@@ -79,7 +79,7 @@ export function ExportModal({ isOpen, onClose, assets, currentFilters }: ExportM
       await exportToPDF(config);
       // Modal will close automatically after successful export
       setTimeout(() => onClose(), 2000);
-    } catch (error) {
+    } catch {
       // Error is handled by the hook
     }
   };

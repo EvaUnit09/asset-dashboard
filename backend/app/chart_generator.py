@@ -136,7 +136,7 @@ class ChartGenerator:
         fig, ax = plt.subplots(figsize=self.figsize)
         
         # Create pie chart with donut style (matches frontend)
-        wedges, texts, autotexts = ax.pie(
+        pie_parts = ax.pie(
             counts, 
             labels=[s.title() for s in statuses],
             colors=colors,
@@ -145,6 +145,7 @@ class ChartGenerator:
             pctdistance=0.85,  # Move percentage labels outward
             wedgeprops=dict(width=0.4)  # Create donut hole
         )
+        _, texts, autotexts = pie_parts  # type: ignore
         
         # Styling
         ax.set_title('Status Distribution', fontsize=16, fontweight='bold', 

@@ -11,7 +11,6 @@ import { useAssets } from './hooks/useAssets';
 import { LaptopExpirationChart } from './components/LaptopExpirationChart';
 import { ExportModal } from './components/ExportModal';
 
-// ---- sample data (replace with API call later) -------------------------
 
 // -----------------------------------------------------------------------
 
