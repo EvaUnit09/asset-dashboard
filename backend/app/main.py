@@ -27,7 +27,11 @@ app = FastAPI(
 )
 origins = [
     "http://10.4.208.227",
-    "http://asset-ny.worldwide.bbc.co.uk"
+    "http://asset-ny.worldwide.bbc.co.uk",
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:3000",  # Alternative dev port
+    "http://127.0.0.1:5173",  # Alternative localhost format
+    "http://127.0.0.1:3000"   # Alternative localhost format
 ]
 
 app.include_router(assets_router)

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8000';
+import api from '@/lib/api';
 
 interface QueryTemplate {
   name: string;
@@ -32,7 +30,7 @@ export function useFunQueries() {
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/fun-queries/templates`);
+        const response = await api.get('/fun-queries/templates');
         setTemplates(response.data);
       } catch (err) {
         console.error('Failed to load query templates:', err);
@@ -47,7 +45,7 @@ export function useFunQueries() {
     setError(null);
     
     try {
-      const response = await axios.get(`${API_BASE_URL}/fun-queries/execute/${templateId}`);
+      const response = await api.get(`/fun-queries/execute/${templateId}`);
       setData(response.data);
     } catch (err: any) {
       setError(new Error(err.response?.data?.detail || 'Failed to execute query'));
