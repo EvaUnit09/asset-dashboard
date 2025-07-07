@@ -29,9 +29,6 @@ class Asset(SQLModel, table=True):
     status: str | None = Field(default=None, nullable=True)
     created_at: str | None = Field(default=None, nullable=True)
     # these were added for Snipe IT API data - careful renaming!
-    purchase_date: str | None = Field(default=None, nullable=True)
-    eol: str | None = Field(default=None, nullable=True)
-
 
 class ExportHistory(SQLModel, table=True):
     """Track PDF export history and statistics."""
