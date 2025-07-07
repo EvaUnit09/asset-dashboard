@@ -79,7 +79,7 @@ def export_assets_pdf(
             assets = filtered_assets
         
         # Generate PDF using the service
-        pdf_service = PDFExportService(assets, config)
+        pdf_service = PDFExportService(list(assets), config)
         pdf_buffer = pdf_service.generate_pdf()
         
         # Save to temporary file for response
@@ -107,17 +107,10 @@ def export_assets_pdf(
         filename = f"asset_report_{timestamp}.pdf"
         
         # Return file response with cleanup
-        def cleanup():
-            try:
-                os.unlink(tmp_file_path)
-            except Exception:
-                pass
-        
         return FileResponse(
             path=tmp_file_path,
             filename=filename,
-            media_type="application/pdf",
-            background=cleanup
+            media_type="application/pdf"
         )
         
     except Exception as e:
@@ -145,7 +138,7 @@ def export_assets_pdf(
 def get_export_history(session: Session = Depends(get_session)):
     """Get export history records."""
     return session.exec(
-        select(ExportHistory).order_by(ExportHistory.created_at.desc()).limit(50)
+        select(ExportHistory).limit(50)
     ).all()
 
 

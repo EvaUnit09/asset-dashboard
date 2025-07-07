@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";            
-import { Building2, Laptop, Activity, TrendingUp, Laptop2, GpuIcon, PartyPopperIcon } from 'lucide-react';
+import { Building2, Laptop, Activity, TrendingUp, Laptop2, GpuIcon, PartyPopperIcon, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AssetChart } from './components/AssetChart';
 import { StatusPieChart } from './components/StatusPieChart';
 import {TrendChart} from './components/TrendChart';
 import {AssetTable} from './components/AssetTable';
 import { useAssets } from './hooks/useAssets';
 import { LaptopExpirationChart } from './components/LaptopExpirationChart';
+import { ExportModal } from './components/ExportModal';
 
 // ---- sample data (replace with API call later) -------------------------
 
@@ -25,6 +27,7 @@ export default function DashboardPage() {
   const [manufacturer, setManufacturer] = useState('all');
   const [category,     setCategory]     = useState('all');
   const [model,        setModel]        = useState('all');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
 
   /* ---------- derived state ---------- */
@@ -60,18 +63,27 @@ export default function DashboardPage() {
       <div className="container mx-auto p-6 space-y-8">
         {/* Header */}
         <header className="flex flex-col space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="p-2 bg-blue-600 rounded-lg">
-              <Building2 className="h-6 w-6 text-white" />
-            </span>
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                Asset Management Dashboard
-              </h1>
-              <p className="text-slate-600">
-                Monthly asset tracking and analytics
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="p-2 bg-blue-600 rounded-lg">
+                <Building2 className="h-6 w-6 text-white" />
+              </span>
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">
+                  Asset Management Dashboard
+                </h1>
+                <p className="text-slate-600">
+                  Monthly asset tracking and analytics
+                </p>
+              </div>
             </div>
+            <Button 
+              onClick={() => setIsExportModalOpen(true)} 
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export PDF
+            </Button>
           </div>
 
           {/* Filters */}
@@ -134,6 +146,19 @@ export default function DashboardPage() {
           <AssetTable data={filtered} />
         </ChartCard>
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        assets={filtered}
+        currentFilters={{
+          company: company !== 'all' ? company : undefined,
+          manufacturer: manufacturer !== 'all' ? manufacturer : undefined,
+          category: category !== 'all' ? category : undefined,
+          model: model !== 'all' ? model : undefined,
+        }}
+      />
     </div>
   );
 }
