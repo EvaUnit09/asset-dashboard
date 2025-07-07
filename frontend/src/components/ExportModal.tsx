@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -19,7 +19,6 @@ import {
   PieChart, 
   Table,
   Settings,
-  X,
   CheckCircle,
   AlertCircle,
   Loader2
