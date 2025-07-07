@@ -64,15 +64,12 @@ export default function Dashboard() {
         <header className="flex flex-col space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="p-2 bg-blue-600 rounded-lg">
-                <Building2 className="h-6 w-6 text-white" />
-              </span>
               <div>
                 <h1 className="text-3xl font-bold text-slate-900">
-                  Asset Management Dashboard
+                  Monthly asset tracking and analytics
                 </h1>
                 <p className="text-slate-600">
-                  Monthly asset tracking and analytics
+                  This dashboard provides a comprehensive view of our asset inventory.
                 </p>
               </div>
             </div>
