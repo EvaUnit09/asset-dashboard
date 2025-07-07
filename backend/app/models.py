@@ -1,6 +1,6 @@
 from typing import Optional
-from sqlmodel import SQLModel, Field, Date
-from sqlalchemy import Column, String, Integer
+from sqlmodel import SQLModel, Field
+from sqlalchemy import Column, String
 from datetime import date
 from pydantic import BaseModel
 from typing import List
@@ -28,16 +28,14 @@ class Asset(SQLModel, table=True):
     department: str | None = Field(default=None, nullable=True)
     status: str | None = Field(default=None, nullable=True)
     created_at: str | None = Field(default=None, nullable=True)
-
     # these were added for Snipe IT API data - careful renaming!
-    status_type: str | None = Field(default=None, nullable=True)
     purchase_date: str | None = Field(default=None, nullable=True)
     eol: str | None = Field(default=None, nullable=True)
 
 
 class ExportHistory(SQLModel, table=True):
     """Track PDF export history and statistics."""
-    __tablename__ = "export_history"
+    __tablename__ = "export_history"  # type: ignore
     
     id: Optional[int] = Field(default=None, primary_key=True)
     config_json: str = Field()  # JSON serialized ExportConfig
