@@ -5,6 +5,7 @@ from .db import engine
 from .models import Asset
 from .routers.assets import router as assets_router
 from app.routers.sync import router as sync_router
+from .routers.fun_queries import router as fun_queries_router
 from fastapi.middleware.cors import CORSMiddleware
 from .scheduler import sync_scheduler
 
@@ -31,6 +32,7 @@ origins = [
 
 app.include_router(assets_router)
 app.include_router(sync_router)
+app.include_router(fun_queries_router)
 
 app.add_middleware(
     CORSMiddleware,
