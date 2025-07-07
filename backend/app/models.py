@@ -2,6 +2,8 @@ from typing import Optional
 from sqlmodel import SQLModel, Field, Date
 from sqlalchemy import Column, String, Integer
 from datetime import date
+from pydantic import BaseModel
+from typing import List
 
 
 class Asset(SQLModel, table=True):
@@ -26,3 +28,67 @@ class Asset(SQLModel, table=True):
     department: str | None = Field(default=None, nullable=True)
     status: str | None = Field(default=None, nullable=True)
     created_at: str | None = Field(default=None, nullable=True)
+
+    # these were added for Snipe IT API data - careful renaming!
+    status_type: str | None = Field(default=None, nullable=True)
+    purchase_date: str | None = Field(default=None, nullable=True)
+    eol: str | None = Field(default=None, nullable=True)
+
+
+class ExportHistory(SQLModel, table=True):
+    """Track PDF export history and statistics."""
+    __tablename__ = "export_history"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    config_json: str = Field()  # JSON serialized ExportConfig
+    created_at: date = Field(default_factory=date.today)
+    file_size_bytes: int = Field(default=0)
+    download_count: int = Field(default=0)
+    export_type: str = Field(default="pdf")  # pdf, excel, csv etc for future
+    status: str = Field(default="completed")  # pending, completed, failed
+
+
+# Pydantic models for API requests/responses (not database tables)
+
+class TableFilters(BaseModel):
+    """Filters to apply to table data."""
+    company: Optional[str] = None
+    manufacturer: Optional[str] = None
+    category: Optional[str] = None
+    model: Optional[str] = None
+    searchQuery: Optional[str] = None
+
+
+class ExportConfig(BaseModel):
+    """Configuration for PDF export generation."""
+    
+    # Report metadata
+    title: str = "Asset Management Report"
+    description: Optional[str] = None
+    includeFilters: bool = True
+    
+    # Summary section
+    includeSummary: bool = True
+    summaryCards: List[str] = ["total", "active", "pending", "stock"]  # total, active, pending, stock
+    
+    # Charts section
+    includeCharts: bool = True
+    selectedCharts: List[str] = ["category", "status"]  # category, status, trends, warranty
+    
+    # Table section
+    includeTable: bool = True
+    tableColumns: List[str] = ["asset_name", "category", "manufacturer", "status"]
+    tableFilters: Optional[TableFilters] = None
+    
+    # Formatting options
+    pageSize: str = "A4"  # A4, Letter
+    orientation: str = "portrait"  # portrait, landscape
+    includeTimestamp: bool = True
+
+
+class ExportResponse(BaseModel):
+    """Response from export API."""
+    success: bool
+    message: str
+    file_size_bytes: Optional[int] = None
+    export_id: Optional[int] = None
