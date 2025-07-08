@@ -61,7 +61,7 @@ export function QuerySelector({
       </div>
 
       {/* Template Selection */}
-      {selectedCategory && selectedCategoryData && (
+      {selectedCategory && selectedCategoryData && selectedCategoryData.queries && (
         <div>
           <label className="text-sm font-medium text-slate-700 mb-2 block">
             Query Template
@@ -70,13 +70,20 @@ export function QuerySelector({
             <SelectTrigger>
               <SelectValue placeholder="Select a query" />
             </SelectTrigger>
-            <SelectContent>
-              {Object.entries(selectedCategoryData.queries).map(([templateKey, template]) => (
+                                <SelectContent>
+            {Object.entries(selectedCategoryData.queries || {}).map(([templateKey, template]) => {
+              // Defensive check to ensure template exists and has required properties
+              if (!template || !template.name) {
+                console.warn(`Invalid template for key: ${templateKey}`, template);
+                return null;
+              }
+              return (
                 <SelectItem key={templateKey} value={templateKey}>
                   {template.name}
                 </SelectItem>
-              ))}
-            </SelectContent>
+              );
+            }).filter(Boolean)}
+          </SelectContent>
           </Select>
           {selectedTemplate && selectedCategoryData.queries[selectedTemplate] && (
             <p className="text-xs text-slate-500 mt-1">
@@ -87,7 +94,7 @@ export function QuerySelector({
       )}
 
       {/* Query Info */}
-      {selectedTemplate && selectedCategoryData && (
+      {selectedTemplate && selectedCategoryData && selectedCategoryData.queries && selectedCategoryData.queries[selectedTemplate] && (
         <div className="p-3 bg-slate-50 rounded-lg">
           <div className="flex items-start gap-2">
             <Badge variant="secondary" className="text-xs">
