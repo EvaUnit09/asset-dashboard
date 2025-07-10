@@ -119,8 +119,8 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE assetdb TO admin;"
 
 # Create backend service
 nssm install AssetManagementBackend "C:\Python311\python.exe"
-nssm set AssetManagementBackend AppDirectory "C:\inetpub\wwwroot\asset-management\backend"
-nssm set AssetManagementBackend AppParameters "C:\inetpub\wwwroot\asset-management\backend\app\main.py"
+nssm set AssetManagementBackend AppDirectory "E:\asset-app\backend"
+nssm set AssetManagementBackend AppParameters "E:\asset-management\backend\app\main.py"
 nssm set AssetManagementBackend AppEnvironmentExtra "DATABASE_URL=postgresql://admin:password@localhost:5432/assetdb"
 nssm set AssetManagementBackend AppEnvironmentExtra "SNIPEIT_API_URL=https://your-snipeit-instance.com/api/v1"
 nssm set AssetManagementBackend AppEnvironmentExtra "SNIPEIT_TOKEN=your_token"
@@ -128,8 +128,8 @@ nssm set AssetManagementBackend AppEnvironmentExtra "SNIPEIT_TOKEN=your_token"
 # Configure service
 nssm set AssetManagementBackend Description "Asset Management Backend API"
 nssm set AssetManagementBackend Start SERVICE_AUTO_START
-nssm set AssetManagementBackend AppStdout "C:\logs\asset-backend.log"
-nssm set AssetManagementBackend AppStderr "C:\logs\asset-backend-error.log"
+nssm set AssetManagementBackend AppStdout "E:\asset-app\logs\backend_out.log"
+nssm set AssetManagementBackend AppStderr "E:\asset-app\logs\backend_err.log"
 
 # Start service
 Start-Service AssetManagementBackend
