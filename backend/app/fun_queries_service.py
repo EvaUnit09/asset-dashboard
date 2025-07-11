@@ -4,7 +4,7 @@ Fun Queries Service - handles predefined asset queries
 from typing import List, Dict, Any
 from sqlmodel import Session, select, func
 from datetime import date, timedelta
-from collections import defaultdict
+from collections import defaultdict  # type: ignore
 
 from .models import Asset
 
@@ -142,8 +142,8 @@ class FunQueriesService:
         """Get assets with expired warranties."""
         today = date.today()
         statement = select(Asset).where(
-            Asset.warranty_expires.is_not(None),
-            Asset.warranty_expires < today
+            Asset.warranty_expires.is_not(None),  # type: ignore
+            Asset.warranty_expires < today  # type: ignore
         )
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
@@ -153,16 +153,16 @@ class FunQueriesService:
         today = date.today()
         future_date = today + timedelta(days=days)
         statement = select(Asset).where(
-            Asset.warranty_expires.is_not(None),
-            Asset.warranty_expires >= today,
-            Asset.warranty_expires <= future_date
+            Asset.warranty_expires.is_not(None),  # type: ignore
+            Asset.warranty_expires >= today,  # type: ignore
+            Asset.warranty_expires <= future_date  # type: ignore
         )
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
     
     def _get_no_warranty_info(self) -> List[Dict[str, Any]]:
         """Get assets with no warranty information."""
-        statement = select(Asset).where(Asset.warranty_expires.is_(None))
+        statement = select(Asset).where(Asset.warranty_expires.is_(None))  # type: ignore
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
     
@@ -170,7 +170,7 @@ class FunQueriesService:
     def _get_missing_serial(self) -> List[Dict[str, Any]]:
         """Get assets missing serial numbers."""
         statement = select(Asset).where(
-            (Asset.serial.is_(None)) | (Asset.serial == "")
+            (Asset.serial.is_(None)) | (Asset.serial == "")  # type: ignore
         )
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
@@ -178,21 +178,21 @@ class FunQueriesService:
     def _get_missing_asset_tag(self) -> List[Dict[str, Any]]:
         """Get assets missing asset tags."""
         statement = select(Asset).where(
-            (Asset.asset_tag.is_(None)) | (Asset.asset_tag == "")
+            (Asset.asset_tag.is_(None)) | (Asset.asset_tag == "")  # type: ignore
         )
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
     
     def _get_missing_warranty(self) -> List[Dict[str, Any]]:
         """Get assets missing warranty dates."""
-        statement = select(Asset).where(Asset.warranty_expires.is_(None))
+        statement = select(Asset).where(Asset.warranty_expires.is_(None))  # type: ignore
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
     
     def _get_missing_manufacturer(self) -> List[Dict[str, Any]]:
         """Get assets missing manufacturer information."""
         statement = select(Asset).where(
-            (Asset.manufacturer.is_(None)) | (Asset.manufacturer == "")
+            (Asset.manufacturer.is_(None)) | (Asset.manufacturer == "")  # type: ignore
         )
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
@@ -200,7 +200,7 @@ class FunQueriesService:
     def _get_missing_location(self) -> List[Dict[str, Any]]:
         """Get assets missing location information."""
         statement = select(Asset).where(
-            (Asset.location.is_(None)) | (Asset.location == "")
+            (Asset.location.is_(None)) | (Asset.location == "")  # type: ignore
         )
         assets = self.session.exec(statement).all()
         return [self._asset_to_dict(asset) for asset in assets]
@@ -208,19 +208,19 @@ class FunQueriesService:
     # Asset Insights Queries
     def _get_status_breakdown(self) -> List[Dict[str, Any]]:
         """Get count of assets by status."""
-        statement = select(Asset.status, func.count(Asset.id).label("count")).group_by(Asset.status)
+        statement = select(Asset.status, func.count(Asset.id).label("count")).group_by(Asset.status)  # type: ignore
         results = self.session.exec(statement).all()
         return [{"status": row[0] or "Unknown", "count": row[1]} for row in results]
     
     def _get_manufacturer_breakdown(self) -> List[Dict[str, Any]]:
         """Get count of assets by manufacturer."""
-        statement = select(Asset.manufacturer, func.count(Asset.id).label("count")).group_by(Asset.manufacturer)
+        statement = select(Asset.manufacturer, func.count(Asset.id).label("count")).group_by(Asset.manufacturer)  # type: ignore
         results = self.session.exec(statement).all()
         return [{"manufacturer": row[0] or "Unknown", "count": row[1]} for row in results]
     
     def _get_category_breakdown(self) -> List[Dict[str, Any]]:
         """Get count of assets by category."""
-        statement = select(Asset.category, func.count(Asset.id).label("count")).group_by(Asset.category)
+        statement = select(Asset.category, func.count(Asset.id).label("count")).group_by(Asset.category)  # type: ignore
         results = self.session.exec(statement).all()
         return [{"category": row[0] or "Unknown", "count": row[1]} for row in results]
     
@@ -228,7 +228,7 @@ class FunQueriesService:
         """Get assets added in the last 30 days."""
         thirty_days_ago = date.today() - timedelta(days=30)
         # Note: created_at is stored as string, so we need to handle this carefully
-        statement = select(Asset).where(Asset.created_at.is_not(None))
+        statement = select(Asset).where(Asset.created_at.is_not(None))  # type: ignore
         assets = self.session.exec(statement).all()
         
         # Filter in Python since created_at is a string
@@ -247,7 +247,7 @@ class FunQueriesService:
     
     def _get_company_breakdown(self) -> List[Dict[str, Any]]:
         """Get count of assets by company."""
-        statement = select(Asset.company, func.count(Asset.id).label("count")).group_by(Asset.company)
+        statement = select(Asset.company, func.count(Asset.id).label("count")).group_by(Asset.company)  # type: ignore
         results = self.session.exec(statement).all()
         return [{"company": row[0] or "Unknown", "count": row[1]} for row in results]
     
@@ -264,6 +264,6 @@ class FunQueriesService:
             "status": asset.status,
             "company": asset.company,
             "location": asset.location,
-            "warranty_expires": asset.warranty_expires.isoformat() if asset.warranty_expires else None,
+            "warranty_expires": asset.warranty_expires.isoformat() if asset.warranty_expires else None,  # type: ignore
             "created_at": asset.created_at
         }

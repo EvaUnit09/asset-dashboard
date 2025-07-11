@@ -148,10 +148,10 @@ Install-WindowsFeature -Name Web-WHC
 
 # Create application pool
 Import-Module WebAdministration
-New-WebAppPool -Name "AssetManagement"
+New-WebAppPool -Name "AssetUI"
 
 # Create website
-New-Website -Name "AssetManagement" -Port 80 -PhysicalPath "C:\inetpub\wwwroot\asset-management\frontend\dist" -ApplicationPool "AssetManagement"
+New-Website -Name "AssetUI" -Port 80 -PhysicalPath "C:\asset-app\site\dist" -ApplicationPool "AssetUI
 
 # Configure URL Rewrite for API proxy
 # Add web.config with rewrite rules
@@ -161,68 +161,35 @@ New-Website -Name "AssetManagement" -Port 80 -PhysicalPath "C:\inetpub\wwwroot\a
 
 ```xml
 <!-- web.config for API proxy -->
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <configuration>
-    <system.webServer>
-        <rewrite>
-            <rules>
-                <rule name="API Proxy" stopProcessing="true">
-                    <match url="^api/(.*)" />
-                    <action type="Rewrite" url="http://localhost:8000/api/{R:1}" />
-                </rule>
-            </rules>
-        </rewrite>
-    </system.webServer>
+  <system.webServer>
+    <proxy enabled="true" preserveHostHeader="false" />
+    <rewrite>
+      <rules>
+        <!-- Reverse-proxy /api/* to FastAPI -->
+        <rule name="API to Backend" stopProcessing="true">
+          <match url="^api/(.*)" />
+          <!-- Sends /api/assets  ->  http://localhost:8000/assets -->
+          <action type="Rewrite" url="http://127.0.0.1:8000/{R:1}" logRewrittenUrl="true" />
+        </rule>
+
+        <!-- SPA fallback -->
+        <rule name="SPA fallback" stopProcessing="true">
+          <match url=".*" />
+          <conditions logicalGrouping="MatchAll">
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="/index.html" />
+        </rule>
+
+      </rules>
+    </rewrite>
+  </system.webServer>
 </configuration>
 ```
 
-## Dockerfile Configurations
-
-### Backend Dockerfile
-
-```dockerfile
-# Build stage
-FROM python:3.11-slim as builder
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Production stage
-FROM python:3.11-slim as production
-
-WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-
-COPY . .
-
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### Frontend Dockerfile
-
-```dockerfile
-# Build stage
-FROM node:18-alpine as builder
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-# Production stage
-FROM nginx:alpine as production
-
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
 
 ## GitHub Actions CI/CD
 
@@ -256,9 +223,11 @@ jobs:
 
     # 3 Copy Zscaler CA so Node / pip can use it ------------------------------------
     - name: Add corporate CA bundle
-      shell: powershell
       run: |
-        Copy-Item 'E:\actions-runner\ZscalerRootCA.crt' 'E:\actions-runner\ca-bundle.pem' -Force
+        Copy-Item 'E:\actions-runner\ZscalerRootCA.pem' 'E:\actions-runner\ca-bundle.pem' -Force
+        # Also copy to backend certs directory for backward compatibility
+        New-Item -ItemType Directory -Force -Path 'E:\asset-app\backend\certs'
+        Copy-Item 'E:\actions-runner\ZscalerRootCA.pem' 'E:\asset-app\backend\certs\ZscalerRootCA.pem' -Force
         
 
     # ---------- Front-end ----------
@@ -288,6 +257,10 @@ jobs:
         robocopy frontend\dist E:\asset-app\site\dist /MIR
         if ($LASTEXITCODE -le 7) { exit 0 }  # 0-7 = success/warning
         exit $LASTEXITCODE                    # 8+ = fail the job
+    
+    - name: Deploy web.config to site root
+      run: |
+        Copy-Item frontend\public\web.config E:\asset-app\site\web.config -Force
 
     # ---------- Back-end ----------
     - name: Set up Python
@@ -299,17 +272,41 @@ jobs:
       with:
         python-version: '3.12'
 
+    # Copy backend files (exclude .venv to avoid permission issues)
+    - name: Copy backend files
+      run: |
+        robocopy backend E:\asset-app\backend /MIR /XD __pycache__ .venv /XF *.pyc
+        if ($LASTEXITCODE -le 7) { exit 0 }
+        exit $LASTEXITCODE
+
+    # Create .env file from GitHub secrets
+    - name: Create .env file
+      run: |
+        $envContent = @"
+        ${{ secrets.MYSECRETS }}
+        requests_ca_bundle=E:\actions-runner\ca-bundle.pem
+        echo_sql=false
+        "@
+        # Use UTF8 without BOM to avoid pydantic field name issues
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $False
+        [System.IO.File]::WriteAllText("E:\asset-app\backend\.env", $envContent, $utf8NoBom)
+
+    # Install/update requirements in existing venv
     - name: Install backend requirements (venv)
-      working-directory: backend
+      env:
+        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
+        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
+        PIP_CERT: E:\actions-runner\ca-bundle.pem
       run: |
         E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
-        E:\asset-app\backend\.venv\Scripts\pip.exe install -r requirements.txt
+        E:\asset-app\backend\.venv\Scripts\pip.exe install -r E:\asset-app\backend\requirements.txt
 
     # ---------- Restart service ----------
     - name: Restart AssetBackend service
       run: |
         nssm restart AssetBackend
       continue-on-error: true
+
 ```
 
 ## Deployment Steps
@@ -322,10 +319,10 @@ git clone <repository-url>
 cd Asset-Management
 
 # Set up environment variables
-[Environment]::SetEnvironmentVariable("DATABASE_URL", "postgresql://admin:password@localhost:5432/assetdb", "Machine")
+[Environment]::SetEnvironmentVariable("DATABASE_URL", "postgresql://admin:password@localhost:5433/assetdb", "Machine")
 
 # Create log directories
-New-Item -ItemType Directory -Path "C:\logs" -Force
+New-Item -ItemType Directory -Path "E:\asset-app\logs" -Force
 ```
 
 ### 2. Build and Deploy
@@ -387,7 +384,7 @@ Invoke-WebRequest -Uri "http://localhost" -Method Get
 Import-Certificate -FilePath "C:\certificates\your-cert.pfx" -CertStoreLocation Cert:\LocalMachine\My
 
 # Configure IIS binding
-New-WebBinding -Name "AssetManagement" -Protocol "https" -Port 443 -SslFlags 1
+New-WebBinding -Name "AssetUI" -Protocol "https" -Port 443 -SslFlags 1
 ```
 
 ## Monitoring and Logging
@@ -396,12 +393,12 @@ New-WebBinding -Name "AssetManagement" -Protocol "https" -Port 443 -SslFlags 1
 
 ```powershell
 # Check service health
-Get-Service AssetManagementBackend
+Get-Service AssetBackend
 Get-Service postgresql-x64-16
 
 # View service logs
-Get-Content "C:\logs\asset-backend.log" -Tail 50
-Get-Content "C:\logs\asset-backend-error.log" -Tail 50
+Get-Content "E:\asset-app\logs\asset-backend.log" -Tail 50
+Get-Content "E:\asset-app\;pgs\asset-backend-error.log" -Tail 50
 
 # Monitor resource usage
 Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -like "*node*"}
@@ -417,29 +414,28 @@ Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -
 
 ```powershell
 # View backend logs
-Get-Content "C:\logs\asset-backend.log" -Wait
+Get-Content "E:\asset-app\logs\asset-backend.log" -Wait
 
 # View error logs
-Get-Content "C:\logs\asset-backend-error.log" -Wait
+Get-Content "E:\asset-app\logs\asset-backend-error.log" -Wait
 
 # View IIS logs
-Get-Content "C:\inetpub\logs\LogFiles\W3SVC1\*.log" -Tail 100
+Get-Content "E:\asset-app\logs\LogFiles\W3SVC1\*.log" -Tail 100
 
 # View PostgreSQL logs
-Get-Content "C:\Program Files\PostgreSQL\16\data\pg_log\*.log" -Tail 50
+Get-Content "E:\Program Files\PostgreSQL\16\data\pg_log\*.log" -Tail 50
 ```
 
 ## Backup and Recovery
 
 ### Database Backup
 
-```powershell
-# Create backup
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-pg_dump -U admin -h localhost assetdb > "C:\backups\backup_$timestamp.sql"
+Use alembic
+```
+
 
 # Restore backup
-psql -U admin -h localhost assetdb < "C:\backups\backup_file.sql"
+psql -U admin -h localhost assetdb < "E:\backups\backup_file.sql"
 ```
 
 ### Application Backup
@@ -460,7 +456,7 @@ Copy-Item "C:\inetpub\wwwroot\asset-management\backend\app\settings.py" "C:\back
 ```powershell
 # Configure multiple backend instances
 # Create additional NSSM services with different ports
-nssm install AssetManagementBackend2 "C:\Python311\python.exe"
+nssm install AssetManagementBackend2 "E:\Python311\python.exe"
 nssm set AssetManagementBackend2 AppParameters "C:\inetpub\wwwroot\asset-management\backend\app\main.py --port 8001"
 
 # Configure load balancing in IIS
@@ -518,7 +514,7 @@ Get-Process | Where-Object {$_.ProcessName -like "*python*"} | Select-Object Pro
    Restart-Service AssetBackend
    
    # Check service logs
-   Get-Content "E:\logs\asset-backend-error.log" -Tail 50
+   Get-Content "E:\asset-app\logs\asset-backend-error.log" -Tail 50
    ```
 
 ### Debug Commands
@@ -529,7 +525,7 @@ psql -U admin -h localhost assetdb
 
 # Check network connectivity
 Test-NetConnection -ComputerName localhost -Port 8000
-Test-NetConnection -ComputerName localhost -Port 5432
+Test-NetConnection -ComputerName localhost -Port 5433
 
 # View environment variables
 Get-ChildItem Env: | Where-Object {$_.Name -like "*ASSET*" -or $_.Name -like "*DATABASE*"}

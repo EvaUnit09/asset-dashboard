@@ -825,16 +825,6 @@ refactor: improve asset table performance
 
 ### Development Deployment
 
-```bash
-# Build and start all services
-docker-compose up --build
-
-# Run in background
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-```
 
 ### Production Deployment (Windows Server)
 
@@ -900,23 +890,7 @@ Start-Service AssetManagementBackend
 - **Discussions**: Use GitHub Discussions
 - **Team Chat**: Use team communication platform
 
-## Contributing
 
-### Before Contributing
-
-1. **Read documentation** thoroughly
-2. **Check existing issues** and discussions
-3. **Discuss changes** with the team
-4. **Follow coding standards** and conventions
-
-### Contribution Checklist
-
-- [ ] Code follows style guidelines
-- [ ] Tests are written and passing
-- [ ] Documentation is updated
-- [ ] No breaking changes (or documented)
-- [ ] Performance impact considered
-- [ ] Security implications reviewed
 
 ### Code Review Guidelines
 
