@@ -34,6 +34,8 @@ export default function Dashboard() {
     () =>
       assets.filter(
         a =>
+          // Only show Active, Pending Rebuild, and Stock assets
+          (a.status === 'Active' || a.status === 'Pending Rebuild' || a.status === 'Stock') &&
           (company      === 'all' || a.company      === company) &&
           (manufacturer === 'all' || a.manufacturer === manufacturer) &&
           (category     === 'all' || a.category     === category) &&
