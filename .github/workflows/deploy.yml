@@ -102,16 +102,6 @@ jobs:
         E:\asset-app\backend\.venv\Scripts\python.exe -m pip install --upgrade pip
         E:\asset-app\backend\.venv\Scripts\pip.exe install -r E:\asset-app\backend\requirements.txt
 
-    # ---------- Database Migration ----------
-    - name: Run database migrations
-      working-directory: E:\asset-app\backend
-      env:
-        NODE_EXTRA_CA_CERTS: E:\actions-runner\ca-bundle.pem
-        REQUESTS_CA_BUNDLE: E:\actions-runner\ca-bundle.pem
-        PIP_CERT: E:\actions-runner\ca-bundle.pem
-      run: |
-        E:\asset-app\backend\.venv\Scripts\alembic.exe upgrade head
-      continue-on-error: false
 
     # ---------- Restart service ----------
     - name: Restart AssetBackend service
