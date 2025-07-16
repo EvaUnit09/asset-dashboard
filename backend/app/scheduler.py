@@ -8,7 +8,7 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
-from .sync import sync_snipeit_assets
+from .sync import sync_all
 
 logger = logging.getLogger(__name__)
 
@@ -31,28 +31,28 @@ class SyncScheduler:
                 func=self._sync_with_logging,
                 trigger=trigger,
                 id=f"sync_{time.replace(':', '')}",
-                name=f"Asset Sync {time}",
+                name=f"Full Sync (Assets + Users) {time}",
                 replace_existing=True,
                 max_instances=1,  # Prevent overlapping syncs
                 misfire_grace_time=300  # 5 minutes grace period
             )
             
-        logger.info("Scheduled sync jobs set up for 8:00 AM, 12:00 PM, 4:00 PM, and 8:00 PM")
+        logger.info("Scheduled full sync jobs (assets + users) set up for 8:00 AM, 12:00 PM, 4:00 PM, and 8:00 PM")
     
     def _sync_with_logging(self):
         """Wrapper function for sync with proper logging."""
         try:
-            logger.info("Starting scheduled asset sync...")
+            logger.info("Starting scheduled full sync (assets + users)...")
             start_time = datetime.now()
             
-            sync_snipeit_assets()
+            sync_all()
             
             end_time = datetime.now()
             duration = end_time - start_time
-            logger.info(f"Sync completed successfully in {duration.total_seconds():.2f} seconds")
+            logger.info(f"Full sync completed successfully in {duration.total_seconds():.2f} seconds")
             
         except Exception as e:
-            logger.error(f"Sync failed with error: {str(e)}", exc_info=True)
+            logger.error(f"Full sync failed with error: {str(e)}", exc_info=True)
             raise
     
     def _job_listener(self, event):
