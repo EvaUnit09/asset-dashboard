@@ -1,47 +1,40 @@
 # Users API Implementation
 
 ## Overview
-This document covers the implementation of the `/users` API endpoint with a separate database configuration for user data management.
+This document covers the implementation of the `/users` API endpoint with a users table in the main database for user data management.
 
 ## Implementation Steps Completed
 
-### 1. Settings Configuration
-- **File**: `backend/app/settings.py`
-- **Changes**: Added `users_database_url` field to support separate database for users
-- **Environment Variable**: `USERS_DATABASE_URL` must be set in environment
-
-### 2. Database Configuration  
-- **File**: `backend/app/db.py`
-- **Changes**: 
-  - Added `users_engine` for separate users database
-  - Created `get_users_session()` dependency function
-  - Maintains existing `get_session()` for assets database
-
-### 3. Users Router
+### 1. Users Router
 - **File**: `backend/app/routers/users.py`
 - **Endpoints**:
   - `GET /users` - Fetch all users
   - `GET /users/{user_id}` - Fetch specific user by ID
-- **Database**: Uses separate users database via `get_users_session()`
+- **Database**: Uses main database via `get_session()`
 
-### 4. Main Application Updates
+### 2. Main Application Updates
 - **File**: `backend/app/main.py`
 - **Changes**:
-  - Imported `users_engine` and `User` model
+  - Imported `User` model
   - Added users router inclusion
-  - Updated lifespan to create tables in both databases
+  - Updated lifespan to create all tables in main database
+
+### 3. Database Migration
+- **File**: `backend/alembic/versions/b2c3d4e5f6a7_add_users_table.py`
+- **Purpose**: Adds users table to existing database
+- **Migration ID**: b2c3d4e5f6a7
 
 ## Database Architecture
 
-### Assets Database (Original)
-- **Purpose**: Asset management data
-- **Models**: Asset, ExportHistory
-- **Session**: `get_session()`
-
-### Users Database (New)
-- **Purpose**: User management data  
-- **Models**: User
-- **Session**: `get_users_session()`
+### Single Database Approach
+- **Purpose**: All application data (assets, users, export history)
+- **Models**: Asset, User, ExportHistory
+- **Session**: `get_session()` for all models
+- **Benefits**: 
+  - Simplified configuration
+  - Single connection pool
+  - Easier data relationships
+  - Simplified backup/restore
 
 ## User Model Structure
 ```python
@@ -61,7 +54,7 @@ class User(SQLModel, table=True):
 ## API Endpoints
 
 ### GET /users
-- **Description**: Retrieve all users from users database
+- **Description**: Retrieve all users from main database
 - **Response**: List of User objects
 - **Error Handling**: Returns 500 with error message if database query fails
 
@@ -71,12 +64,19 @@ class User(SQLModel, table=True):
 - **Response**: Single User object
 - **Error Handling**: Returns 404 if user not found, 500 for other errors
 
-## Environment Setup Required
+## Database Migration
 
-Add to your `.env` file:
-```env
-USERS_DATABASE_URL=your_users_database_connection_string
+To apply the users table migration:
+```bash
+cd backend
+alembic upgrade head
 ```
+
+This will create the `user` table in your existing database.
+
+## Environment Setup
+
+No additional environment variables needed - uses existing `DATABASE_URL`.
 
 ## Testing
 
@@ -93,10 +93,12 @@ Potential additions to consider:
 - Pagination for large user datasets
 - User authentication and authorization
 - Integration with asset assignment functionality
+- Foreign key relationships between users and assets
 
 ## Notes
 
-- Both databases will have their tables created automatically on application startup
-- The separation allows for independent scaling and management of user vs asset data
+- Users table will be created automatically on application startup or via migration
+- Single database simplifies management and relationships
 - Error handling follows existing patterns in the codebase
 - All endpoints follow FastAPI best practices with proper type hints and documentation 
+- Easier to implement user-asset relationships in the future 

@@ -8,7 +8,6 @@ class Settings(BaseSettings):
     )
     
     database_url: str
-    users_database_url: str
     snipeit_api_url: str
     snipeit_token: str
     requests_ca_bundle: str | None = None

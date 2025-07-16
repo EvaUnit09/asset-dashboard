@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
-from .db import engine, users_engine
+from .db import engine
 from .models import Asset, User
 from .routers.assets import router as assets_router
 from app.routers.sync import router as sync_router
@@ -16,10 +16,8 @@ from .scheduler import sync_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    # Create tables for main assets database
+    # Create tables in the main database (includes assets and users)
     SQLModel.metadata.create_all(engine)
-    # Create tables for users database  
-    SQLModel.metadata.create_all(users_engine)
     sync_scheduler.start()
     yield
     # Shutdown
