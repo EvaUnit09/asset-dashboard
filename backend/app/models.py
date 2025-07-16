@@ -30,6 +30,19 @@ class Asset(SQLModel, table=True):
     created_at: str | None = Field(default=None, nullable=True)
     # these were added for Snipe IT API data - careful renaming!
 
+
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    first_name: str | None = Field(default=None, nullable=True)
+    last_name: str | None = Field(default=None, nullable=True)
+    username: str | None = Field(default=None, nullable=True)
+    email: str | None = Field(default=None, nullable=True)
+    county: str | None = Field(default=None, nullable=True)
+    department_id: str | None = Field(default=None, nullable=True)
+    location_id: str | None = Field(default=None, nullable=True)
+    assets_count: int | None = Field(default=None, nullable=True)
+    license_count: int | None = Field(default=None, nullable=True)
+
 class ExportHistory(SQLModel, table=True):
     """Track PDF export history and statistics."""
     __tablename__ = "export_history"  # type: ignore
