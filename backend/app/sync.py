@@ -29,6 +29,7 @@ def sync_snipeit_users():
                 email=user_data.get("email"),
                 county=user_data.get("county"),
                 department_id=department.get("id"),
+                department_name=department.get("name"),
                 location_id=location.get("id") if location else None,
                 assets_count=user_data.get("assets_count", 0),
                 license_count=user_data.get("licenses_count", 0)

@@ -39,6 +39,7 @@ class User(SQLModel, table=True):
     email: str | None = Field(default=None, nullable=True)
     county: str | None = Field(default=None, nullable=True)
     department_id: str | None = Field(default=None, nullable=True)
+    department_name: str | None = Field(default=None, nullable=True)
     location_id: str | None = Field(default=None, nullable=True)
     assets_count: int | None = Field(default=None, nullable=True)
     license_count: int | None = Field(default=None, nullable=True)

@@ -265,19 +265,7 @@ pytest --cov=app
 
 ## Production Deployment
 
-### Docker Configuration
-
-The backend is containerized with a multi-stage Dockerfile:
-
-```dockerfile
-# Build stage
-FROM python:3.11-slim as builder
-# ... build dependencies
-
-# Production stage
-FROM python:3.11-slim as production
-# ... runtime configuration
-```
+`
 
 ### Health Checks
 

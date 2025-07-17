@@ -10,6 +10,7 @@ import {AssetTable} from '../components/AssetTable';
 import { useAssets } from '../hooks/useAssets';
 import { LaptopExpirationChart } from '../components/LaptopExpirationChart';
 import { ExportModal } from '../components/ExportModal';
+import { useUsers } from '../hooks/useUsers';
 
 
 // -----------------------------------------------------------------------
@@ -22,14 +23,19 @@ export default function Dashboard() {
     error,
   } = useAssets();
 
+  const { data: users = [] } = useUsers();
+
+  
   const [company,      setCompany]      = useState('all');
   const [manufacturer, setManufacturer] = useState('all');
   const [category,     setCategory]     = useState('all');
   const [model,        setModel]        = useState('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-
+  const [department, setDepartment] = useState('all');
 
   /* ---------- derived state ---------- */
+  
+
   const filtered = useMemo(
     () =>
       assets.filter(
@@ -48,6 +54,8 @@ export default function Dashboard() {
   const manufacturers  = useMemo(() => [...new Set(assets.map(a => a.manufacturer))].filter((m): m is string => m != null), [assets]);
   const categories     = useMemo(() => [...new Set(assets.map(a => a.category))].filter((c): c is string => c != null),     [assets]);
   const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null), [assets]);
+  const departments = useMemo(() => [...new Set(users?.map(user => user.department_name).filter(Boolean))].sort(), [users]);
+
 
   const stats = {
     total:    filtered.length,
@@ -110,6 +118,12 @@ export default function Dashboard() {
               onChange={setModel}
               options={models}
             />
+            <FilterSelect
+              label="Department"
+              value={department}
+              onChange={setDepartment}
+              options={departments}
+            />
           </div>
         </header>
 
@@ -138,6 +152,7 @@ export default function Dashboard() {
         <ChartCard title="Warranty Expiration Trends" icon={PartyPopperIcon}>
           <LaptopExpirationChart data={filtered} />
         </ChartCard>
+        
 
         {/* Table */}
         <ChartCard title="Asset Details" icon={Laptop}>

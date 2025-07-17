@@ -655,6 +655,15 @@ curl -X POST "https://your-domain.com/api/assets" \
 curl -X POST "https://your-domain.com/api/sync" \
   -H "Content-Type: application/json" \
   -d '{"force": true}'
+
+curl -X POST -d "" "http://asset-ny.worldwide.bbc.co.uk/api/sync/users"
+curl -X POST -d "" "http://asset-ny.worldwide.bbc.co.uk/api/sync/all"
+curl -X POST -d "" "http://asset-ny.worldwide.bbc.co.uk/api/sync/assets"
+curl -X POST -d "" "http://asset-ny.worldwide.bbc.co.uk/api/sync/now"
+
+curl "http://asset-ny.worldwide.bbc.co.uk/api/sync/schedule"
+curl "http://asset-ny.worldwide.bbc.co.uk/api/users"
+curl "http://asset-ny.worldwide.bbc.co.uk/api/assets"
 ```
 
 ## Versioning
