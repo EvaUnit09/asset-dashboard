@@ -26,6 +26,7 @@ class Asset(SQLModel, table=True):
     warranty_expires: date | None = Field(default=None, nullable=True)
     location: str | None = Field(default=None, nullable=True)
     department: str | None = Field(default=None, nullable=True)
+    assigned_user_id: int | None = Field(default=None, nullable=True)
     status: str | None = Field(default=None, nullable=True)
     created_at: str | None = Field(default=None, nullable=True)
     # these were added for Snipe IT API data - careful renaming!

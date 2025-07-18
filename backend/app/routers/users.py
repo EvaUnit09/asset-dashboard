@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import select, Session
 
 from ..db import get_session
-from ..models import User
+from ..models import User, Asset
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -64,4 +64,31 @@ def read_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user 
+    return user
+
+@router.get("/{user_id}/assets", response_model=list[Asset])
+def read_user_assets(user_id: int, session: Session = Depends(get_session)):
+    """
+    Get all assets assigned to a specific user.
+    
+    Args:
+        user_id: The ID of the user whose assets to retrieve
+        
+    Returns:
+        List[Asset]: List of assets assigned to the user
+    """
+    # First check if user exists
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get assets assigned to this user
+    try:
+        statement = select(Asset).where(Asset.assigned_user_id == user_id)
+        assets = session.exec(statement).all()
+        return assets
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch user assets: {str(e)}"
+        ) 

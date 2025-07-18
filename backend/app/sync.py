@@ -85,7 +85,9 @@ def sync_snipeit_assets():
             comp       = hw.get("company") or {}
             asn        = hw.get("assigned_to") or {}
             crt        = hw.get("created_at") or {}
-            dept       = (
+            # Extract assigned user ID and department
+            assigned_user_id = asn.get("id") if asn.get("type") == "user" else None
+            dept = (
                 dept_lookup.get(asn["id"])
                 if asn.get("type") == "user"
                 else (asn.get("name") if asn.get("type") == "department" else None)
@@ -100,6 +102,7 @@ def sync_snipeit_assets():
                 model_no          = hw.get("model_number"),
                 status            = status_lbl.get("name"),
                 department        = dept,
+                assigned_user_id  = assigned_user_id,
                 category          = cat.get("name"),
                 manufacturer      = mfr.get("name"),
                 location          = loc.get("name"),

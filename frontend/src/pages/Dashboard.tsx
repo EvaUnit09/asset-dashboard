@@ -153,18 +153,20 @@ export default function Dashboard() {
           </ChartCard>
         </div>
 
-        {/* New Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <ChartCard title="Mac vs Lenovo by Department" icon={Building2}>
-            <MacLenovoChart data={filtered} />
-          </ChartCard>
-          <ChartCard title="Asset Health Alerts" icon={Activity}>
-            <AssetHealthAlerts data={filtered} />
-          </ChartCard>
-          <ChartCard title="Asset Acquisition Timeline" icon={TrendingUp}>
-            <AssetLifecycleChart data={filtered} />
-          </ChartCard>
-        </div>
+        {/* Mac vs Lenovo Chart */}
+        <ChartCard title="Mac vs Lenovo by Department" icon={Building2}>
+          <MacLenovoChart data={filtered} />
+        </ChartCard>
+
+        {/* Asset Health Alerts */}
+        <ChartCard title="Asset Health Alerts" icon={Activity}>
+          <AssetHealthAlerts data={filtered} />
+        </ChartCard>
+
+        {/* Asset Acquisition Timeline */}
+        <ChartCard title="Asset Acquisition Timeline" icon={TrendingUp}>
+          <AssetLifecycleChart data={filtered} />
+        </ChartCard>
 
         <ChartCard title="Warranty Expiration Trends" icon={PartyPopperIcon}>
           <LaptopExpirationChart data={filtered} />
