@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { Building2, Database, BarChart3 } from 'lucide-react';
+import { Building2, Database, BarChart3, Users } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -20,6 +20,12 @@ export function Layout({ children }: LayoutProps) {
       label: 'Fun Queries',
       icon: Database,
       active: location.pathname === '/fun-queries'
+    },
+    {
+      href: '/users',
+      label: 'Users',
+      icon: Users,
+      active: location.pathname === '/users'
     }
   ];
 

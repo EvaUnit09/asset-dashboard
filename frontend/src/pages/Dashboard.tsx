@@ -5,12 +5,14 @@ import { Building2, Laptop, Activity, TrendingUp, Laptop2, GpuIcon, PartyPopperI
 import { Button } from '@/components/ui/button';
 import { AssetChart } from '../components/AssetChart';
 import { StatusPieChart } from '../components/StatusPieChart';
-import {TrendChart} from '../components/TrendChart';
 import {AssetTable} from '../components/AssetTable';
 import { useAssets } from '../hooks/useAssets';
 import { LaptopExpirationChart } from '../components/LaptopExpirationChart';
 import { ExportModal } from '../components/ExportModal';
 import { useUsers } from '../hooks/useUsers';
+import { MacLenovoChart } from '../components/MacLenovoChart';
+import { AssetHealthAlerts } from '../components/AssetHealthAlerts';
+import { AssetLifecycleChart } from '../components/AssetLifecycleChart';
 
 
 // -----------------------------------------------------------------------
@@ -151,9 +153,18 @@ export default function Dashboard() {
           </ChartCard>
         </div>
 
-        <ChartCard title="Monthly Asset Trends: (newly added devices by initial status)" icon={TrendingUp}>
-          <TrendChart data={filtered} />
-        </ChartCard>
+        {/* New Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ChartCard title="Mac vs Lenovo by Department" icon={Building2}>
+            <MacLenovoChart data={filtered} />
+          </ChartCard>
+          <ChartCard title="Asset Health Alerts" icon={Activity}>
+            <AssetHealthAlerts data={filtered} />
+          </ChartCard>
+          <ChartCard title="Asset Acquisition Timeline" icon={TrendingUp}>
+            <AssetLifecycleChart data={filtered} />
+          </ChartCard>
+        </div>
 
         <ChartCard title="Warranty Expiration Trends" icon={PartyPopperIcon}>
           <LaptopExpirationChart data={filtered} />
