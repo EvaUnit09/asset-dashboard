@@ -7,7 +7,23 @@ from ..models import User
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("", response_model=list[User])
-def read_users(
+def read_users(session: Session = Depends(get_session)):
+    """
+    Get all users from the database.
+    
+    Returns:
+        List[User]: List of all users
+    """
+    try:
+        return session.exec(select(User)).all()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch users: {str(e)}"
+        )
+
+@router.get("/paginated", response_model=list[User])
+def read_users_paginated(
     skip: int = 0, 
     limit: int = 100, 
     session: Session = Depends(get_session)

@@ -13,7 +13,12 @@ from ..pdf_export_service import PDFExportService
 router = APIRouter(prefix="/assets", tags=["assets"])
 
 @router.get("", response_model=list[Asset])
-def read_assets(
+def read_assets(session=Depends(get_session)):
+    """Get all assets for dashboard use."""
+    return session.exec(select(Asset)).all()
+
+@router.get("/paginated", response_model=list[Asset])
+def read_assets_paginated(
     skip: int = 0, 
     limit: int = 100, 
     session=Depends(get_session)
