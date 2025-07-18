@@ -5,6 +5,7 @@ from .models import Asset, User
 from .snipeit import fetch_all_hardware, fetch_all_users, user_department_map
 from .performance_monitor import monitor_performance, sync_circuit_breaker, is_system_under_load
 import time
+import html
 
 dept_lookup = user_department_map()
 
@@ -37,7 +38,7 @@ def sync_snipeit_users():
                 email=user_data.get("email"),
                 county=user_data.get("county"),
                 department_id=department.get("id"),
-                department_name=department.get("name"),
+                department_name=html.unescape(department.get("name")) if department.get("name") else None,
                 location_id=location.get("id") if location else None,
                 assets_count=user_data.get("assets_count", 0),
                 license_count=user_data.get("licenses_count", 0)
