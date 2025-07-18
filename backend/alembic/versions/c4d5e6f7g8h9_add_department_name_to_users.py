@@ -19,8 +19,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add department_name column to user table
-    op.add_column('user', sa.Column('department_name', sa.String(), nullable=True))
+    # Add department_name column to user table (skip if exists)
+    from sqlalchemy import inspect
+    from alembic import context
+    
+    conn = context.get_bind()
+    inspector = inspect(conn)
+    
+    # Check if column already exists
+    columns = [col['name'] for col in inspector.get_columns('user')]
+    if 'department_name' not in columns:
+        op.add_column('user', sa.Column('department_name', sa.String(), nullable=True))
 
 
 def downgrade() -> None:

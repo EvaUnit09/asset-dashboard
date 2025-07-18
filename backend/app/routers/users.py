@@ -82,9 +82,12 @@ def read_user_assets(user_id: int, session: Session = Depends(get_session)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Get assets assigned to this user
+    # Get the user's full name
+    user_name = f"{user.first_name} {user.last_name}".strip()
+    
+    # Get assets assigned to this user by name
     try:
-        statement = select(Asset).where(Asset.assigned_user_id == user_id)
+        statement = select(Asset).where(Asset.assigned_user_name == user_name)
         assets = session.exec(statement).all()
         return assets
     except Exception as e:

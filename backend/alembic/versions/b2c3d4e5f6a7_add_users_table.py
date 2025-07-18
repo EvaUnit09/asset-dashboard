@@ -19,21 +19,28 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create users table
-    op.create_table(
-        'user',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('first_name', sa.String(), nullable=True),
-        sa.Column('last_name', sa.String(), nullable=True),
-        sa.Column('username', sa.String(), nullable=True),
-        sa.Column('email', sa.String(), nullable=True),
-        sa.Column('county', sa.String(), nullable=True),
-        sa.Column('department_id', sa.String(), nullable=True),
-        sa.Column('location_id', sa.String(), nullable=True),
-        sa.Column('assets_count', sa.Integer(), nullable=True),
-        sa.Column('license_count', sa.Integer(), nullable=True),
-        sa.PrimaryKeyConstraint('id')
-    )
+    # Create users table (skip if exists)
+    from sqlalchemy import inspect
+    from alembic import context
+    
+    conn = context.get_bind()
+    inspector = inspect(conn)
+    
+    if 'user' not in inspector.get_table_names():
+        op.create_table(
+            'user',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('first_name', sa.String(), nullable=True),
+            sa.Column('last_name', sa.String(), nullable=True),
+            sa.Column('username', sa.String(), nullable=True),
+            sa.Column('email', sa.String(), nullable=True),
+            sa.Column('county', sa.String(), nullable=True),
+            sa.Column('department_id', sa.String(), nullable=True),
+            sa.Column('location_id', sa.String(), nullable=True),
+            sa.Column('assets_count', sa.Integer(), nullable=True),
+            sa.Column('license_count', sa.Integer(), nullable=True),
+            sa.PrimaryKeyConstraint('id')
+        )
 
 
 def downgrade() -> None:

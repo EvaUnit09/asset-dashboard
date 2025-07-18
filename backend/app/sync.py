@@ -85,8 +85,14 @@ def sync_snipeit_assets():
             comp       = hw.get("company") or {}
             asn        = hw.get("assigned_to") or {}
             crt        = hw.get("created_at") or {}
-            # Extract assigned user ID and department
-            assigned_user_id = asn.get("id") if asn.get("type") == "user" else None
+            # Extract assigned user name and department
+            assigned_user_name = None
+            if asn.get("type") == "user":
+                # Extract user name from assigned_to object
+                first_name = asn.get("first_name", "")
+                last_name = asn.get("last_name", "")
+                assigned_user_name = f"{first_name} {last_name}".strip() if first_name or last_name else asn.get("name")
+            
             dept = (
                 dept_lookup.get(asn["id"])
                 if asn.get("type") == "user"
@@ -102,7 +108,7 @@ def sync_snipeit_assets():
                 model_no          = hw.get("model_number"),
                 status            = status_lbl.get("name"),
                 department        = dept,
-                assigned_user_id  = assigned_user_id,
+                assigned_user_name = assigned_user_name,
                 category          = cat.get("name"),
                 manufacturer      = mfr.get("name"),
                 location          = loc.get("name"),
