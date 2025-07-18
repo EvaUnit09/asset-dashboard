@@ -57,8 +57,8 @@ export default function Dashboard() {
   const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null), [assets]);
   // Get departments from both users and assets to ensure completeness
   const departments = useMemo(() => {
-    const userDepts = users?.map(user => user.department_name).filter(Boolean) || [];
-    const assetDepts = assets.map(a => a.department).filter(Boolean) || [];
+    const userDepts = users?.map(user => user.department_name).filter((d): d is string => Boolean(d)) || [];
+    const assetDepts = assets.map(a => a.department).filter((d): d is string => Boolean(d)) || [];
     return [...new Set([...userDepts, ...assetDepts])].sort();
   }, [users, assets]);
 

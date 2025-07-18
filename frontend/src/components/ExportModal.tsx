@@ -42,6 +42,7 @@ interface ExportModalProps {
     manufacturer?: string;
     category?: string;
     model?: string;
+    department?: string;
     searchQuery?: string;
   };
 }
