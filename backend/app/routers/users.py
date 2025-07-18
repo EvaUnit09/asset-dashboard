@@ -7,15 +7,27 @@ from ..models import User
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("", response_model=list[User])
-def read_users(session: Session = Depends(get_session)):
+def read_users(
+    skip: int = 0, 
+    limit: int = 100, 
+    session: Session = Depends(get_session)
+):
     """
-    Get all users from the database.
+    Get users with pagination to reduce memory usage.
+    
+    Args:
+        skip: Number of records to skip
+        limit: Maximum number of records to return (capped at 500)
     
     Returns:
-        List[User]: List of all users
+        List[User]: List of users
     """
+    if limit > 500:  # Cap maximum limit
+        limit = 500
+        
     try:
-        return session.exec(select(User)).all()
+        statement = select(User).offset(skip).limit(limit)
+        return session.exec(statement).all()
     except Exception as e:
         raise HTTPException(
             status_code=500,

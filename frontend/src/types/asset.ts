@@ -11,6 +11,7 @@ export interface Asset {
   status: string;
   model_no: string | null;
   company: string | null;
+  department: string | null;
   created_at: string;
   warranty_expires: string;
 }

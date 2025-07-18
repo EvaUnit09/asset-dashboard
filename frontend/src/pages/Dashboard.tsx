@@ -45,16 +45,22 @@ export default function Dashboard() {
           (company      === 'all' || a.company      === company) &&
           (manufacturer === 'all' || a.manufacturer === manufacturer) &&
           (category     === 'all' || a.category     === category) &&
-          (model        === 'all' || a.model        === model)
+          (model        === 'all' || a.model        === model) &&
+          (department   === 'all' || a.department   === department)
       ),
-    [assets, company, manufacturer, category, model]
+    [assets, company, manufacturer, category, model, department]
   );
 
   const companies      = useMemo(() => [...new Set(assets.map(a => a.company))].filter((c): c is string => c != null),      [assets]);
   const manufacturers  = useMemo(() => [...new Set(assets.map(a => a.manufacturer))].filter((m): m is string => m != null), [assets]);
   const categories     = useMemo(() => [...new Set(assets.map(a => a.category))].filter((c): c is string => c != null),     [assets]);
   const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null), [assets]);
-  const departments = useMemo(() => [...new Set(users?.map(user => user.department_name).filter(Boolean))].sort(), [users]);
+  // Get departments from both users and assets to ensure completeness
+  const departments = useMemo(() => {
+    const userDepts = users?.map(user => user.department_name).filter(Boolean) || [];
+    const assetDepts = assets.map(a => a.department).filter(Boolean) || [];
+    return [...new Set([...userDepts, ...assetDepts])].sort();
+  }, [users, assets]);
 
 
   const stats = {
@@ -170,6 +176,7 @@ export default function Dashboard() {
           manufacturer: manufacturer !== 'all' ? manufacturer : undefined,
           category: category !== 'all' ? category : undefined,
           model: model !== 'all' ? model : undefined,
+          department: department !== 'all' ? department : undefined,
         }}
       />
     </div>

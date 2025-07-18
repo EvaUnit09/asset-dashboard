@@ -65,6 +65,7 @@ class TableFilters(BaseModel):
     manufacturer: Optional[str] = None
     category: Optional[str] = None
     model: Optional[str] = None
+    department: Optional[str] = None
     searchQuery: Optional[str] = None
 
 

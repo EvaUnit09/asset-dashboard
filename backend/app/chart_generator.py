@@ -369,9 +369,15 @@ class ChartGenerator:
     def _save_chart_to_buffer(self, fig) -> BytesIO:
         """Save matplotlib figure to BytesIO buffer."""
         buffer = BytesIO()
-        fig.savefig(buffer, format='png', dpi=self.dpi, 
-                   bbox_inches='tight', facecolor='white', 
-                   edgecolor='none', pad_inches=0.2)
-        buffer.seek(0)
-        plt.close(fig)  # Free memory
+        try:
+            fig.savefig(buffer, format='png', dpi=self.dpi, 
+                       bbox_inches='tight', facecolor='white', 
+                       edgecolor='none', pad_inches=0.2)
+            buffer.seek(0)
+        finally:
+            plt.close(fig)  # Always free memory
+            plt.clf()       # Clear the current figure
+            # Force garbage collection for matplotlib objects
+            import gc
+            gc.collect()
         return buffer 

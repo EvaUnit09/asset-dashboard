@@ -217,6 +217,8 @@ class PDFExportService:
             filter_data.append(['Category:', filters.category])
         if filters.model:
             filter_data.append(['Model:', filters.model])
+        if filters.department:
+            filter_data.append(['Department:', filters.department])
         if filters.searchQuery:
             filter_data.append(['Search Query:', filters.searchQuery])
         
@@ -492,6 +494,9 @@ class PDFExportService:
         
         if filters.model:
             filtered = [a for a in filtered if a.model and filters.model.lower() in a.model.lower()]
+        
+        if filters.department:
+            filtered = [a for a in filtered if a.department and filters.department.lower() in a.department.lower()]
         
         if filters.searchQuery:
             query = filters.searchQuery.lower()

@@ -8,6 +8,7 @@ export interface TableFilters {
   manufacturer?: string;
   category?: string;
   model?: string;
+  department?: string;
   searchQuery?: string;
 }
 
@@ -111,6 +112,7 @@ export const TABLE_COLUMNS = {
   serial: { id: 'serial', name: 'Serial Number', width: 'w-40' },
   status: { id: 'status', name: 'Status', width: 'w-32' },
   company: { id: 'company', name: 'Company', width: 'w-36' },
+  department: { id: 'department', name: 'Department', width: 'w-36' },
   location: { id: 'location', name: 'Location', width: 'w-36' },
   warranty_expires: { id: 'warranty_expires', name: 'Warranty Expires', width: 'w-40' },
   created_at: { id: 'created_at', name: 'Created Date', width: 'w-40' }

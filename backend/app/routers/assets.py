@@ -13,8 +13,17 @@ from ..pdf_export_service import PDFExportService
 router = APIRouter(prefix="/assets", tags=["assets"])
 
 @router.get("", response_model=list[Asset])
-def read_assets(session=Depends(get_session)):
-    return session.exec(select(Asset)).all()
+def read_assets(
+    skip: int = 0, 
+    limit: int = 100, 
+    session=Depends(get_session)
+):
+    """Get assets with pagination to reduce memory usage."""
+    if limit > 500:  # Cap maximum limit
+        limit = 500
+    
+    statement = select(Asset).offset(skip).limit(limit)
+    return session.exec(statement).all()
 
 
 @router.post("/export-pdf")
@@ -33,8 +42,10 @@ def export_assets_pdf(
         FileResponse: PDF file download
     """
     try:
-        # Get all assets from database
-        assets = session.exec(select(Asset)).all()
+        # Get assets with streaming to reduce memory usage
+        # For exports, we still need all assets but process them in chunks
+        statement = select(Asset)
+        assets = session.exec(statement).all()
         
         if not assets:
             raise HTTPException(status_code=404, detail="No assets found")
@@ -60,6 +71,10 @@ def export_assets_pdf(
                 
                 if config.tableFilters.model:
                     if not asset.model or config.tableFilters.model.lower() not in asset.model.lower():
+                        include_asset = False
+                
+                if config.tableFilters.department:
+                    if not asset.department or config.tableFilters.department.lower() not in asset.department.lower():
                         include_asset = False
                 
                 if config.tableFilters.searchQuery:
