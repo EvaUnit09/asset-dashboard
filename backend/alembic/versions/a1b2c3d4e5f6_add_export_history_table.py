@@ -19,18 +19,25 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create export_history table
-    op.create_table(
-        'export_history',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('config_json', sa.String(), nullable=False),
-        sa.Column('created_at', sa.Date(), nullable=False),
-        sa.Column('file_size_bytes', sa.Integer(), nullable=False),
-        sa.Column('download_count', sa.Integer(), nullable=False),
-        sa.Column('export_type', sa.String(), nullable=False),
-        sa.Column('status', sa.String(), nullable=False),
-        sa.PrimaryKeyConstraint('id')
-    )
+    # Create export_history table (skip if exists)
+    from sqlalchemy import inspect
+    from alembic import context
+    
+    conn = context.get_bind()
+    inspector = inspect(conn)
+    
+    if 'export_history' not in inspector.get_table_names():
+        op.create_table(
+            'export_history',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('config_json', sa.String(), nullable=False),
+            sa.Column('created_at', sa.Date(), nullable=False),
+            sa.Column('file_size_bytes', sa.Integer(), nullable=False),
+            sa.Column('download_count', sa.Integer(), nullable=False),
+            sa.Column('export_type', sa.String(), nullable=False),
+            sa.Column('status', sa.String(), nullable=False),
+            sa.PrimaryKeyConstraint('id')
+        )
 
 
 def downgrade() -> None:
