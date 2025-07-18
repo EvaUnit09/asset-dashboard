@@ -7,8 +7,6 @@ from .performance_monitor import monitor_performance, sync_circuit_breaker, is_s
 import time
 import html
 
-dept_lookup = user_department_map()
-
 def flat_date(val: str | dict | None) -> str | None:
     if isinstance(val, dict):
         return val.get("date")
@@ -38,7 +36,7 @@ def sync_snipeit_users():
                 email=user_data.get("email"),
                 county=user_data.get("county"),
                 department_id=department.get("id"),
-                department_name=html.unescape(department.get("name")) if department.get("name") else None,
+                department_name=html.unescape(str(department.get("name"))) if department.get("name") else None,
                 location_id=location.get("id") if location else None,
                 assets_count=user_data.get("assets_count", 0),
                 license_count=user_data.get("licenses_count", 0)
@@ -72,6 +70,9 @@ def sync_snipeit_assets():
     batch_count = 0
     processed_count = 0
     
+    # Get fresh department lookup data
+    dept_lookup = user_department_map()
+    
     with Session(engine) as session:
         asset_batch = []
         
@@ -94,6 +95,7 @@ def sync_snipeit_assets():
                 last_name = asn.get("last_name", "")
                 assigned_user_name = f"{first_name} {last_name}".strip() if first_name or last_name else asn.get("name")
             
+            # Determine department - use fresh lookup data
             dept = (
                 dept_lookup.get(asn["id"])
                 if asn.get("type") == "user"
