@@ -12,7 +12,7 @@ export interface Asset {
   model_no: string | null;
   company: string | null;
   department: string | null;
-  assigned_user_id: number | null;
+  assigned_user_name: string | null;
   created_at: string;
   warranty_expires: string;
 }
