@@ -21,10 +21,25 @@ HEADERS = {
 def fetch_all_users() -> list[dict]:
     """Synchronous version for backward compatibility."""
     url = f"{settings.snipeit_api_url}/users"
-    params = {"limit": 1000, "expand": "department"}
-    resp = requests.get(url, headers=HEADERS, params=params, verify=CA_BUNDLE, timeout=30)
-    resp.raise_for_status()
-    return resp.json()["rows"]
+    all_users = []
+    params = {"limit": 100, "offset": 0, "expand": "department"}
+    
+    while True:
+        resp = requests.get(url, headers=HEADERS, params=params, verify=CA_BUNDLE, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()["rows"]
+        
+        if not data:
+            break
+            
+        all_users.extend(data)
+        
+        if len(data) < params["limit"]:
+            break
+            
+        params["offset"] += params["limit"]
+    
+    return all_users
 
 async def fetch_all_users_async() -> list[dict]:
     """Async version with smaller batch sizes."""
