@@ -10,7 +10,12 @@ export function MacLenovoChart({ data }: MacLenovoChartProps) {
   const chartData = useMemo(() => {
     // Group assets by department and count Mac vs Lenovo
     const departmentStats = data.reduce((acc, asset) => {
-      const department = asset.department || 'Unassigned Department';
+      // Better department handling
+      let department = asset.department;
+      if (!department || department.trim() === '') {
+        department = 'Unassigned Department';
+      }
+      
       const manufacturer = asset.manufacturer?.toLowerCase();
       
       if (!acc[department]) {
@@ -31,7 +36,12 @@ export function MacLenovoChart({ data }: MacLenovoChartProps) {
     // Convert to array and sort by total count (descending)
     return Object.values(departmentStats)
       .filter(dept => dept.total > 0) // Only show departments with Mac/Lenovo assets
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => {
+        // Put "Unassigned Department" at the end
+        if (a.department === 'Unassigned Department') return 1;
+        if (b.department === 'Unassigned Department') return -1;
+        return b.total - a.total;
+      });
   }, [data]);
 
   if (chartData.length === 0) {

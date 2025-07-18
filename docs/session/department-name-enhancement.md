@@ -1,214 +1,112 @@
-# Department Name Enhancement for Dashboard Filtering
+# Department Name Enhancement
 
-## Overview
-This document covers the enhancement to add `department_name` to the User model to enable department filtering on the main dashboard page.
+## Issue Description
+The Users page is displaying "Unassigned" for department names even though the `department_name` column exists in the database. The column is showing as null for all users.
 
-## Requirements
-- Extract department name from SnipeIT API response in addition to department ID
-- Store department name in the database for easy filtering
-- Update frontend types to include department name
-- Enable department-based filtering on dashboard
+## Investigation
 
-## SnipeIT API Structure
-According to SnipeIT documentation, the department object structure is:
-```json
-{
-  "department": {
-    "id": 1,
-    "name": "Product Management"
-  }
-}
-```
+### Current State
+- User model has both `department_id` and `department_name` fields
+- Migration `c4d5e6f7g8h9_add_department_name_to_users.py` exists to add `department_name` column
+- Sync process in `sync.py` attempts to populate `department_name` from Snipe-IT API
+- Frontend displays "Unassigned" when `department_name` is null
 
-## Implementation Steps Completed
+### Root Cause Analysis
+The issue is likely one of the following:
+1. Migration not applied - `department_name` column doesn't exist in database
+2. Sync process not populating `department_name` correctly
+3. Snipe-IT API not returning department names in expected format
 
-### 1. Backend Model Update
-- **File**: `backend/app/models.py`
-- **Changes**: Added `department_name` field to User model
-- **Field Type**: `str | None = Field(default=None, nullable=True)`
-- **Position**: Added after `department_id` field
+## Solution Steps
 
-### 2. Sync Logic Enhancement
-- **File**: `backend/app/sync.py`
-- **Function**: `sync_snipeit_users()`
-- **Changes**: Added extraction of `department.get("name")` to store department name
-- **Data Source**: Existing expanded department object from SnipeIT API
-
-### 3. Database Migration
-- **File**: `backend/alembic/versions/c4d5e6f7g8h9_add_department_name_to_users.py`
-- **Purpose**: Add `department_name` column to existing user table
-- **Migration ID**: c4d5e6f7g8h9
-- **Type**: ALTER TABLE to add nullable string column
-
-### 4. Frontend Type Update
-- **File**: `frontend/src/types/user.ts`
-- **Changes**: Added `department_name: string` to User interface
-- **Position**: Added after `department_id` field
-
-## Technical Details
-
-### Database Schema Change
+### Step 1: Verify Database Schema
+Check if the `department_name` column exists in the user table:
 ```sql
--- Migration adds this column
-ALTER TABLE "user" ADD COLUMN department_name VARCHAR NULL;
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'user' 
+ORDER BY ordinal_position;
 ```
 
-### API Response Enhancement
-The `/users` endpoint will now return department names:
-```json
-{
-  "id": 1,
-  "first_name": "John",
-  "last_name": "Doe",
-  "username": "john.doe",
-  "email": "john.doe@company.com",
-  "county": "County Name",
-  "department_id": "5",
-  "department_name": "Product Management",
-  "location_id": "2",
-  "assets_count": 3,
-  "license_count": 1
-}
-```
-
-### Sync Process
-1. `fetch_all_users()` retrieves users with expanded department data
-2. `sync_snipeit_users()` extracts both `department.id` and `department.name`
-3. Database stores both ID (for relationships) and name (for display/filtering)
-
-## Data Flow
-```
-SnipeIT API → fetch_all_users() → sync_snipeit_users() → Database → API → Frontend
-```
-
-## Migration Process
-
-### Apply Database Changes
+### Step 2: Apply Migration (if needed)
+If the column doesn't exist, apply the migration:
 ```bash
 cd backend
-alembic upgrade head
+python -m alembic upgrade head
 ```
 
-### Sync Updated Data
+### Step 3: Test Sync Process
+Run a manual sync to see if department names are being populated:
 ```bash
-# Run users sync to populate department names
+cd backend
 python run_users_sync.py
-
-# Or full sync
-python run_users_sync.py --full
 ```
 
-## Dashboard Filtering Implementation (Next Steps)
+### Step 4: Debug Sync Logic
+Check the sync process in `backend/app/sync.py` to ensure department names are being extracted correctly from Snipe-IT API.
 
-### Frontend Components to Update
-1. **Dashboard.tsx** - Add department filter dropdown
-2. **AssetTable.tsx** - Support department filtering if applicable
-3. **Layout.tsx** - Consider adding department filter to global navigation
+### Step 5: Verify API Response
+Check what the Snipe-IT API is actually returning for department information.
 
-### Filter Implementation Strategy
-```tsx
-// Example department filter implementation
-const departments = useMemo(() => {
-  return [...new Set(users.map(user => user.department_name).filter(Boolean))];
-}, [users]);
+## Implementation Status
+- [x] Verify database schema - Column exists but is null for all users
+- [x] Apply migration if needed - Migration exists and column is present
+- [x] Test sync process - Sync logic works but has pagination issue
+- [x] Debug sync logic - Found and fixed pagination problem
+- [x] Verify API response - API structure looks correct
+- [x] Test frontend display - Frontend correctly shows "Unassigned" for null values
+- [x] Fix pagination issue - Updated fetch_all_users() to use proper pagination
 
-const filteredAssets = useMemo(() => {
-  if (!selectedDepartment) return assets;
-  return assets.filter(asset => 
-    // Logic to match assets to department
-    // This may require additional asset-to-user relationships
-  );
-}, [assets, selectedDepartment]);
+## Root Cause Identified
+The `department_name` column exists in the database but is null for all users. This indicates:
+1. The migration has been applied (column exists)
+2. The sync process either hasn't run or isn't populating the department names correctly
+3. The sync logic in `sync.py` looks correct for extracting `department.get("name")`
+
+## Solution
+The sync process needs to be run to populate the `department_name` field from the Snipe-IT API.
+
+### Issue Found: Pagination Problem
+After running the sync, it was discovered that only 500 users were synced out of 1441 total users in Snipe-IT. This is due to a pagination issue in the `fetch_all_users()` function.
+
+**Root Cause:** The `fetch_all_users()` function in `backend/app/snipeit.py` only makes one API request with `limit: 1000`, but Snipe-IT may have server-side limits or the function isn't handling pagination properly.
+
+**Solution:** Update the `fetch_all_users()` function to use proper pagination like the `fetch_all_hardware()` function does.
+
+### Fix Applied
+Updated `backend/app/snipeit.py` to implement proper pagination in the `fetch_all_users()` function:
+
+```python
+def fetch_all_users() -> list[dict]:
+    """Synchronous version for backward compatibility."""
+    url = f"{settings.snipeit_api_url}/users"
+    all_users = []
+    params = {"limit": 100, "offset": 0, "expand": "department"}
+    
+    while True:
+        resp = requests.get(url, headers=HEADERS, params=params, verify=CA_BUNDLE, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()["rows"]
+        
+        if not data:
+            break
+            
+        all_users.extend(data)
+        
+        if len(data) < params["limit"]:
+            break
+            
+        params["offset"] += params["limit"]
+    
+    return all_users
 ```
 
-### API Enhancements Needed
-- Consider adding department filtering to `/assets` endpoint
-- May need to establish user-asset relationships for filtering
-- Add department list endpoint for dropdown options
-
-## Benefits
-
-### Performance
-- Department names available locally without API calls
-- Faster filtering and display operations
-- Reduced network requests for dropdown options
-
-### User Experience
-- Human-readable department names in UI
-- Consistent department naming across components
-- Improved filtering capabilities
-
-### Data Integrity
-- Single source of truth for department names
-- Consistent with SnipeIT department structure
-- Maintains ID for potential relationships
-
-## Future Enhancements
-
-### Dashboard Filtering
-- Department-based asset filtering
-- Multi-department selection
-- Department-based user filtering
-- Export filtering by department
-
-### Reporting Features
-- Department-wise asset reports
-- User distribution by department
-- Department usage analytics
-
-### UI Components
-- Department badge/tag components
-- Department-based color coding
-- Department hierarchy display
-
-## Testing
-
-### Database Migration Testing
-```bash
-# Test migration up
-alembic upgrade head
-
-# Test migration down (if needed)
-alembic downgrade -1
-```
-
-### Data Sync Testing
-```bash
-# Test users sync
-python run_users_sync.py
-
-# Verify data in database
-psql -d assetdb -c "SELECT id, username, department_id, department_name FROM \"user\" LIMIT 10;"
-```
-
-### API Testing
-```bash
-# Test updated API response
-curl http://localhost:8000/api/users | jq '.[0] | {username, department_id, department_name}'
-```
+This change:
+- Uses smaller batch sizes (100 instead of 1000) for better reliability
+- Implements proper pagination with offset
+- Continues fetching until all users are retrieved
+- Maintains backward compatibility with existing sync code
 
 ## Notes
-
-### Backward Compatibility
-- Existing API consumers will receive new `department_name` field
-- Migration is additive (no breaking changes)
-- Existing queries continue to work
-
-### Data Consistency
-- Department names sync with each user sync
-- Names stay current with SnipeIT changes
-- Fallback to ID if name unavailable
-
-### Performance Considerations
-- Minimal impact on sync performance
-- Improved filtering performance vs API calls
-- Consider indexing if filtering heavily used
-
-## Related Files Modified
-- `backend/app/models.py` - User model
-- `backend/app/sync.py` - Sync logic
-- `backend/alembic/versions/c4d5e6f7g8h9_add_department_name_to_users.py` - Migration
-- `frontend/src/types/user.ts` - TypeScript types
-
-## Configuration
-No additional configuration required - uses existing SnipeIT API connection and database settings. 
+- The sync process uses `html.unescape()` on department names, suggesting they might be HTML-encoded
+- The frontend correctly handles null values by showing "Unassigned"
+- Need to ensure the sync process is running and populating data correctly 
