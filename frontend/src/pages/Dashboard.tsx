@@ -88,7 +88,7 @@ export default function Dashboard() {
   const companies      = useMemo(() => [...new Set(assets.map(a => a.company))].filter((c): c is string => c != null),      [assets]);
   const manufacturers  = useMemo(() => [...new Set(assets.map(a => a.manufacturer))].filter((m): m is string => m != null), [assets]);
   const categories     = useMemo(() => [...new Set(assets.map(a => a.category))].filter((c): c is string => c != null),     [assets]);
-  const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null), [assets]);
+  const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null).sort(), [assets]);
   // Get departments from both users and assets to ensure completeness
   const departments = useMemo(() => {
     const userDepts = users?.map(user => user.department_name).filter((d): d is string => Boolean(d)) || [];
