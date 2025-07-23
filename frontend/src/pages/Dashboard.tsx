@@ -37,20 +37,52 @@ export default function Dashboard() {
 
   /* ---------- derived state ---------- */
   
+  // Create a mapping of user names to their departments for filtering
+  const userDepartmentMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users?.forEach(user => {
+      if (user.first_name && user.last_name && user.department_name) {
+        const fullName = `${user.first_name} ${user.last_name}`.trim();
+        map.set(fullName, user.department_name);
+      }
+    });
+    return map;
+  }, [users]);
 
   const filtered = useMemo(
     () =>
       assets.filter(
-        a =>
+        a => {
           // Only show Active, Pending Rebuild, and Stock assets
-          (a.status === 'Active' || a.status === 'Pending Rebuild' || a.status === 'Stock') &&
-          (company      === 'all' || a.company      === company) &&
-          (manufacturer === 'all' || a.manufacturer === manufacturer) &&
-          (category     === 'all' || a.category     === category) &&
-          (model        === 'all' || a.model        === model) &&
-          (department   === 'all' || a.department   === department)
+          if (!(a.status === 'Active' || a.status === 'Pending Rebuild' || a.status === 'Stock')) {
+            return false;
+          }
+
+          // Apply other filters
+          if (company !== 'all' && a.company !== company) return false;
+          if (manufacturer !== 'all' && a.manufacturer !== manufacturer) return false;
+          if (category !== 'all' && a.category !== category) return false;
+          if (model !== 'all' && a.model !== model) return false;
+
+          // Department filtering: check both asset department and user department
+          if (department !== 'all') {
+            // First try asset department (for backwards compatibility)
+            if (a.department === department) return true;
+            
+            // Then try user department (for AD-synced departments)
+            if (a.assigned_user_name) {
+              const userDept = userDepartmentMap.get(a.assigned_user_name);
+              if (userDept === department) return true;
+            }
+            
+            // If neither matches, exclude this asset
+            return false;
+          }
+
+          return true;
+        }
       ),
-    [assets, company, manufacturer, category, model, department]
+    [assets, company, manufacturer, category, model, department, userDepartmentMap]
   );
 
   const companies      = useMemo(() => [...new Set(assets.map(a => a.company))].filter((c): c is string => c != null),      [assets]);
