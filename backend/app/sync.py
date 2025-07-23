@@ -113,9 +113,12 @@ def sync_snipeit_assets():
             )
 
             # Debug asset assignment and department mapping
-            if hw.get("manufacturer", "").lower() == "lenovo":
+            manufacturer_name = mfr.get("name", "") if mfr else ""
+            if manufacturer_name and "lenovo" in manufacturer_name.lower():
                 print(f"\n--- DEBUG LENOVO ASSET: {hw.get('asset_tag')} ---")
                 print(f"Asset name: {hw.get('name')}")
+                print(f"Manufacturer object: {mfr}")
+                print(f"Manufacturer name: {manufacturer_name}")
                 print(f"Assigned_to object: {asn}")
                 print(f"Assigned_to type: {asn.get('type')}")
                 print(f"Assigned_to ID: {asn.get('id')}")
