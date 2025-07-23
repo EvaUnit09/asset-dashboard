@@ -25,24 +25,13 @@ export function MacLenovoChart({ data, users = [] }: MacLenovoChartProps) {
   }, [users]);
 
   const chartData = useMemo(() => {
-    // Debug: Check what manufacturers we have
-    const allManufacturers = [...new Set(data.map(asset => asset.manufacturer).filter(Boolean))];
-    console.log('All manufacturers:', allManufacturers);
-    
     // Filter Mac/Lenovo assets first with more robust detection
     const macLenovoAssets = data.filter(asset => {
       const manufacturer = asset.manufacturer?.toLowerCase() || '';
       const isApple = manufacturer.includes('apple');
       const isLenovo = manufacturer.includes('lenovo') || manufacturer.includes('think');
-      
-      if (isApple || isLenovo) {
-        console.log(`Found ${isApple ? 'Apple' : 'Lenovo'} asset:`, asset.manufacturer, asset.asset_name);
-      }
-      
       return isApple || isLenovo;
     });
-
-    console.log(`Found ${macLenovoAssets.length} Mac/Lenovo assets total`);
 
     // Group by user's current department (more reliable than asset.department)
     const departmentStats = macLenovoAssets.reduce((acc, asset) => {
@@ -71,15 +60,12 @@ export function MacLenovoChart({ data, users = [] }: MacLenovoChartProps) {
         acc[department].Mac++;
       } else if (manufacturer.includes('lenovo') || manufacturer.includes('think')) {
         acc[department].Lenovo++;
-        console.log(`Assigned Lenovo to ${department}:`, asset.manufacturer);
       }
       
       acc[department].total = acc[department].Mac + acc[department].Lenovo;
       
       return acc;
     }, {} as Record<string, { department: string; Mac: number; Lenovo: number; total: number }>);
-
-    console.log('Department stats:', departmentStats);
 
     // Convert to array and calculate percentages if needed
     const departmentArray = Object.values(departmentStats)

@@ -128,6 +128,71 @@ if (department !== 'all') {
 - `frontend/src/pages/Dashboard.tsx` - Fixed department filter consistency
 - `frontend/src/components/MacLenovoChart.tsx` - Fixed department detection with dual-check logic
 - `frontend/src/pages/Dashboard.tsx` - Updated to pass users data to MacLenovoChart
+- `backend/app/snipeit.py` - Fixed HTML entity unescaping in user_department_map
+
+### Critical Bug Fix: HTML Entity Encoding
+
+#### Problem Discovered
+Department names with special characters (like "&") were stored as HTML entities in the database:
+- **User departments**: `"Technology & Facilities"` (properly unescaped)
+- **Asset departments**: `"Technology &amp; Facilities"` (HTML entities not unescaped)
+- **Result**: Frontend matching failed because `"Technology & Facilities" !== "Technology &amp; Facilities"`
+
+#### Root Cause
+The `user_department_map()` function in `snipeit.py` was not unescaping HTML entities, while the user sync was:
+
+```python
+# User sync (correct)
+department_name=html.unescape(str(department.get("name")))
+
+# user_department_map (was broken)
+u["id"]: (u.get("department") or {}).get("name")  # No unescaping!
+```
+
+#### Fix Applied
+```python
+# Fixed user_department_map with HTML unescaping
+u["id"]: html.unescape(str((u.get("department") or {}).get("name"))) 
+if (u.get("department") or {}).get("name") else None
+```
+
+#### Required Actions
+1. **Restart backend service** to clear the cached department map
+2. **Re-sync assets** to populate with unescaped department names  
+3. **Test department filtering** to verify matching works correctly
+
+This fix ensures consistent department name formatting across users and assets, enabling proper frontend filtering and chart display.
+
+### Larger Issue Discovered: Asset Department Assignment
+
+#### Problem
+Upon further investigation, the issue is not just HTML entities but a fundamental problem with asset-to-department mapping. Many assets show `(NULL)` departments in the database, indicating the assignment logic isn't working properly.
+
+#### Potential Root Causes
+1. **Assets not assigned to users**: Many assets may not have `assigned_to` data
+2. **User ID mismatch**: Assets assigned to users that don't exist in the users table  
+3. **Missing user departments**: Users exist but don't have department information
+4. **Assignment type issues**: Assets might be assigned to locations/departments directly instead of users
+
+#### Debugging Added
+Added comprehensive debugging to `backend/app/sync.py`:
+
+```python
+# Department lookup debugging
+print(f"Total users in dept_lookup: {len(dept_lookup)}")
+print(f"Users with departments: {len(users_with_depts)}")
+
+# Per-asset debugging for Lenovo devices
+print(f"Assigned_to object: {asn}")
+print(f"Assigned_to type: {asn.get('type')}")
+print(f"Department from lookup: {dept}")
+```
+
+#### Next Steps
+1. **Run asset sync with debugging** to see assignment patterns
+2. **Analyze SnipeIT assignment strategy** - are assets assigned to users or departments?
+3. **Verify user-asset relationships** in SnipeIT admin interface
+4. **Adjust sync logic** based on actual assignment patterns discovered
 
 ### Additional Fixes Applied
 

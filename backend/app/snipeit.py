@@ -1,6 +1,7 @@
 import requests, os, certifi, asyncio, aiohttp
 from typing import Generator, AsyncGenerator
 import logging
+import html
 
 from .settings import settings
 
@@ -83,7 +84,8 @@ def user_department_map() -> dict[int, str | None]:
     # cache once per run
     if not hasattr(user_department_map, "_cache"):
         user_department_map._cache = {
-            u["id"]: (u.get("department") or {}).get("name")
+            u["id"]: html.unescape(str((u.get("department") or {}).get("name"))) 
+            if (u.get("department") or {}).get("name") else None
             for u in fetch_all_users()
         }
     return user_department_map._cache

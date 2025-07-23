@@ -73,6 +73,16 @@ def sync_snipeit_assets():
     # Get fresh department lookup data
     dept_lookup = user_department_map()
     
+    # Debug: Show what's in the department lookup
+    print(f"\n=== DEPARTMENT LOOKUP DEBUG ===")
+    print(f"Total users in dept_lookup: {len(dept_lookup)}")
+    users_with_depts = {k: v for k, v in dept_lookup.items() if v is not None}
+    print(f"Users with departments: {len(users_with_depts)}")
+    print("Sample entries:")
+    for i, (user_id, dept) in enumerate(list(users_with_depts.items())[:5]):
+        print(f"  User ID {user_id}: {dept}")
+    print("=== END DEPT LOOKUP DEBUG ===\n")
+    
     with Session(engine) as session:
         asset_batch = []
         
@@ -101,6 +111,20 @@ def sync_snipeit_assets():
                 if asn.get("type") == "user"
                 else (asn.get("name") if asn.get("type") == "department" else None)
             )
+
+            # Debug asset assignment and department mapping
+            if hw.get("manufacturer", "").lower() == "lenovo":
+                print(f"\n--- DEBUG LENOVO ASSET: {hw.get('asset_tag')} ---")
+                print(f"Asset name: {hw.get('name')}")
+                print(f"Assigned_to object: {asn}")
+                print(f"Assigned_to type: {asn.get('type')}")
+                print(f"Assigned_to ID: {asn.get('id')}")
+                print(f"Assigned user name: {assigned_user_name}")
+                print(f"Department from lookup: {dept}")
+                print(f"Available in dept_lookup: {asn.get('id') in dept_lookup if asn.get('id') else 'No ID'}")
+                if asn.get("id") and asn.get("id") in dept_lookup:
+                    print(f"Dept lookup value: {dept_lookup.get(asn['id'])}")
+                print("--- END DEBUG ---\n")
 
             obj = Asset(
                 id                = hw["id"],
