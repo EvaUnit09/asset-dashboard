@@ -1,21 +1,48 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { Asset } from '@/types/asset';
+import type { User } from '@/types/user';
 
 interface MacLenovoChartProps {
   data: Asset[];
+  users?: User[];
 }
 
-export function MacLenovoChart({ data }: MacLenovoChartProps) {
+export function MacLenovoChart({ data, users = [] }: MacLenovoChartProps) {
+  // Create user department mapping
+  const userDepartmentMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users.forEach(user => {
+      if (user.first_name && user.last_name && user.department_name) {
+        const fullName = `${user.first_name} ${user.last_name}`.trim();
+        map.set(fullName, user.department_name);
+      }
+    });
+    return map;
+  }, [users]);
+
+  // Helper function to get correct department for an asset
+  const getAssetDepartment = (asset: Asset): string => {
+    // First try asset department (for backwards compatibility)
+    if (asset.department) {
+      return asset.department;
+    }
+    
+    // Then try user department (for AD-synced departments)
+    if (asset.assigned_user_name) {
+      const userDept = userDepartmentMap.get(asset.assigned_user_name);
+      if (userDept) {
+        return userDept;
+      }
+    }
+    
+    return 'Unassigned Department';
+  };
+
   const chartData = useMemo(() => {
     // Group assets by department and count Mac vs Lenovo
     const departmentStats = data.reduce((acc, asset) => {
-      // Better department handling
-      let department = asset.department;
-      if (!department || department.trim() === '') {
-        department = 'Unassigned Department';
-      }
-      
+      const department = getAssetDepartment(asset);
       const manufacturer = asset.manufacturer?.toLowerCase();
       
       if (!acc[department]) {
@@ -42,7 +69,7 @@ export function MacLenovoChart({ data }: MacLenovoChartProps) {
         if (b.department === 'Unassigned Department') return -1;
         return b.total - a.total;
       });
-  }, [data]);
+  }, [data, getAssetDepartment]);
 
   if (chartData.length === 0) {
     return (
@@ -52,21 +79,28 @@ export function MacLenovoChart({ data }: MacLenovoChartProps) {
     );
   }
 
+  // Determine chart height based on number of departments
+  const chartHeight = chartData.length > 8 ? 400 : 320;
+  // Adjust bottom margin for department names
+  const bottomMargin = chartData.length > 6 ? 100 : 80;
+
   return (
-    <div className="w-full h-80">
+    <div className="w-full" style={{ height: chartHeight }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: bottomMargin }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis 
             dataKey="department" 
             stroke="#64748b"
-            fontSize={12}
+            fontSize={11}
             angle={-45}
             textAnchor="end"
-            height={80}
+            height={bottomMargin}
+            interval={0}
+            tick={{ fontSize: 11 }}
           />
           <YAxis stroke="#64748b" fontSize={12} />
           <Tooltip 
@@ -75,6 +109,8 @@ export function MacLenovoChart({ data }: MacLenovoChartProps) {
               border: '1px solid #e2e8f0',
               borderRadius: '6px'
             }}
+            formatter={(value, name) => [value, name === 'Mac' ? 'Mac' : 'Lenovo']}
+            labelFormatter={(label) => `Department: ${label}`}
           />
           <Legend />
           <Bar 

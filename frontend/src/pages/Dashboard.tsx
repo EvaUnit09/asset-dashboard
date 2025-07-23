@@ -187,7 +187,7 @@ export default function Dashboard() {
 
         {/* Mac vs Lenovo Chart */}
         <ChartCard title="Mac vs Lenovo by Department" icon={Building2}>
-          <MacLenovoChart data={filtered} />
+          <MacLenovoChart data={filtered} users={users} />
         </ChartCard>
 
         {/* Asset Health Alerts */}

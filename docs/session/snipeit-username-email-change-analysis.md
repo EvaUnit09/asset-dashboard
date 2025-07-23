@@ -125,4 +125,39 @@ if (department !== 'all') {
 - **Sync Order**: Users sync updates department names, then asset sync picks up new names
 
 ### Files Modified
-- `frontend/src/pages/Dashboard.tsx` - Fixed department filter consistency 
+- `frontend/src/pages/Dashboard.tsx` - Fixed department filter consistency
+- `frontend/src/components/MacLenovoChart.tsx` - Fixed department detection with dual-check logic
+- `frontend/src/pages/Dashboard.tsx` - Updated to pass users data to MacLenovoChart
+
+### Additional Fixes Applied
+
+#### MacLenovoChart Department Fix
+The MacLenovoChart component also had the same issue - it was using stale `asset.department` data.
+
+**Changes Made**:
+1. **Added User Department Mapping**: Same logic as Dashboard filtering
+2. **Dual-Check Logic**: Checks both asset departments and user departments
+3. **Dynamic Chart Sizing**: Adjusts height and margins based on number of departments
+4. **Improved X-Axis**: Better handling of long department names with angled text
+
+```typescript
+// Helper function to get correct department
+const getAssetDepartment = (asset: Asset): string => {
+  // First try asset department (backwards compatibility)
+  if (asset.department) return asset.department;
+  
+  // Then try user department (AD-synced)
+  if (asset.assigned_user_name) {
+    const userDept = userDepartmentMap.get(asset.assigned_user_name);
+    if (userDept) return userDept;
+  }
+  
+  return 'Unassigned Department';
+};
+```
+
+**UX Improvements**:
+- Dynamic chart height: 320px for ≤8 departments, 400px for more
+- Increased bottom margins for better label visibility
+- Smaller font size to fit more department names
+- Enhanced tooltips with better formatting 
