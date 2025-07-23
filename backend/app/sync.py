@@ -1,5 +1,5 @@
 # app/sync.py
-from sqlmodel import Session
+from sqlmodel import Session, select
 from .db import engine
 from .models import Asset, User
 from .snipeit import fetch_all_hardware, fetch_all_users, user_department_map
@@ -153,7 +153,34 @@ def sync_snipeit_assets():
             # Process in batches to reduce memory usage
             if len(asset_batch) >= BATCH_SIZE:
                 for asset in asset_batch:
-                    session.merge(asset)
+                    try:
+                        # Try to merge first
+                        session.merge(asset)
+                    except Exception as e:
+                        if "unique constraint" in str(e).lower() and "asset_tag" in str(e).lower():
+                            # Handle asset tag conflicts by deleting the old asset with this tag
+                            print(f"Resolving asset_tag conflict for {asset.asset_tag}")
+                            session.rollback()
+                            
+                            # Delete any existing asset with this tag (but different ID)
+                            existing = session.exec(
+                                select(Asset).where(
+                                    Asset.asset_tag == asset.asset_tag,
+                                    Asset.id != asset.id
+                                )
+                            ).first()
+                            
+                            if existing:
+                                print(f"  Removing old asset ID {existing.id} with tag {asset.asset_tag}")
+                                session.delete(existing)
+                                session.commit()
+                            
+                            # Now try the merge again
+                            session.merge(asset)
+                        else:
+                            # Re-raise other errors
+                            raise e
+                            
                 session.commit()
                 batch_count += 1
                 print(f"  Processed batch {batch_count} ({len(asset_batch)} assets)")
@@ -162,7 +189,32 @@ def sync_snipeit_assets():
         # Process remaining assets
         if asset_batch:
             for asset in asset_batch:
-                session.merge(asset)
+                try:
+                    session.merge(asset)
+                except Exception as e:
+                    if "unique constraint" in str(e).lower() and "asset_tag" in str(e).lower():
+                        # Handle asset tag conflicts
+                        print(f"Resolving asset_tag conflict for {asset.asset_tag}")
+                        session.rollback()
+                        
+                        # Delete any existing asset with this tag (but different ID)
+                        existing = session.exec(
+                            select(Asset).where(
+                                Asset.asset_tag == asset.asset_tag,
+                                Asset.id != asset.id
+                            )
+                        ).first()
+                        
+                        if existing:
+                            print(f"  Removing old asset ID {existing.id} with tag {asset.asset_tag}")
+                            session.delete(existing)
+                            session.commit()
+                        
+                        # Now try the merge again
+                        session.merge(asset)
+                    else:
+                        raise e
+                        
             session.commit()
             batch_count += 1
             print(f"  Processed final batch {batch_count} ({len(asset_batch)} assets)")

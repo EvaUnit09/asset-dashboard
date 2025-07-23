@@ -194,6 +194,48 @@ print(f"Department from lookup: {dept}")
 3. **Verify user-asset relationships** in SnipeIT admin interface
 4. **Adjust sync logic** based on actual assignment patterns discovered
 
+### Asset Tag Conflict Resolution
+
+#### Problem Discovered
+During asset sync, unique constraint violations occurred when SnipeIT changed asset tags:
+```
+(psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "asset_asset_tag_key"
+DETAIL: Key (asset_tag)=(9084619389) already exists.
+```
+
+#### Root Cause
+1. **Asset A** exists in database with asset_tag "9084619389"
+2. **Asset B (ID 2592)** exists with different asset_tag
+3. **SnipeIT sync** tries to update Asset B to use asset_tag "9084619389"
+4. **Database rejects** due to unique constraint
+
+#### Fix Applied
+Enhanced sync logic to handle asset tag conflicts gracefully:
+
+```python
+# Added error handling in asset sync
+try:
+    session.merge(asset)
+except Exception as e:
+    if "unique constraint" in str(e).lower() and "asset_tag" in str(e).lower():
+        # Remove old asset with conflicting tag
+        existing = session.exec(
+            select(Asset).where(
+                Asset.asset_tag == asset.asset_tag,
+                Asset.id != asset.id
+            )
+        ).first()
+        
+        if existing:
+            session.delete(existing)
+            session.commit()
+        
+        # Retry the merge
+        session.merge(asset)
+```
+
+**This ensures SnipeIT remains the source of truth** for asset tags while preventing database conflicts.
+
 ### Additional Fixes Applied
 
 #### MacLenovoChart Department Fix
