@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useUsers } from '../hooks/useUsers';
 import { UserAssetsModal } from '../components/UserAssetsModal';
 import type { User } from '@/types/user';
+import { decodeUserData } from '../utils/htmlDecode';
 
 export default function Users() {
   const { data: users = [], isLoading, isError, error } = useUsers();
@@ -16,13 +17,14 @@ export default function Users() {
     if (!searchQuery.trim()) return users;
     
     const query = searchQuery.toLowerCase();
-    return users.filter(user => 
-      user.first_name?.toLowerCase().includes(query) ||
-      user.last_name?.toLowerCase().includes(query) ||
-      user.username?.toLowerCase().includes(query) ||
-      user.email?.toLowerCase().includes(query) ||
-      user.department_name?.toLowerCase().includes(query)
-    );
+    return users.filter(user => {
+      const decodedUser = decodeUserData(user);
+      return decodedUser.first_name?.toLowerCase().includes(query) ||
+             decodedUser.last_name?.toLowerCase().includes(query) ||
+             decodedUser.username?.toLowerCase().includes(query) ||
+             decodedUser.email?.toLowerCase().includes(query) ||
+             decodedUser.department_name?.toLowerCase().includes(query);
+    });
   }, [users, searchQuery]);
 
   const sortedUsers = useMemo(() => {
@@ -141,56 +143,59 @@ export default function Users() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedUsers.map(user => (
-                    <tr 
-                      key={user.id} 
-                      className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
-                      onClick={() => handleUserClick(user)}
-                    >
-                      <td className="py-3 px-4">
-                        <div>
-                          <div className="font-medium text-slate-900">
-                            {user.first_name} {user.last_name}
+                  {sortedUsers.map(user => {
+                    const decodedUser = decodeUserData(user);
+                    return (
+                      <tr 
+                        key={user.id} 
+                        className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
+                        onClick={() => handleUserClick(user)}
+                      >
+                        <td className="py-3 px-4">
+                          <div>
+                            <div className="font-medium text-slate-900">
+                              {decodedUser.first_name} {decodedUser.last_name}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              @{decodedUser.username}
+                            </div>
                           </div>
-                          <div className="text-sm text-slate-500">
-                            @{user.username}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        {user.email}
-                      </td>
-                      <td className="py-3 px-4">
-                        {user.department_name ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {user.department_name}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                            Unassigned
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {user.assets_count ? (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-800 text-sm font-medium">
-                            {user.assets_count}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">0</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        {user.license_count ? (
-                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
-                            {user.license_count}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">0</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">
+                          {decodedUser.email}
+                        </td>
+                        <td className="py-3 px-4">
+                          {decodedUser.department_name ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {decodedUser.department_name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                              Unassigned
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {user.assets_count ? (
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                              {user.assets_count}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">0</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {user.license_count ? (
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
+                              {user.license_count}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">0</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               

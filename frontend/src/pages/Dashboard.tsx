@@ -13,6 +13,7 @@ import { useUsers } from '../hooks/useUsers';
 import { MacLenovoChart } from '../components/MacLenovoChart';
 import { AssetHealthAlerts } from '../components/AssetHealthAlerts';
 import { AssetLifecycleChart } from '../components/AssetLifecycleChart';
+import { decodeUserData } from '../utils/htmlDecode';
 
 
 // -----------------------------------------------------------------------
@@ -42,8 +43,9 @@ export default function Dashboard() {
     const map = new Map<string, string>();
     users?.forEach(user => {
       if (user.first_name && user.last_name && user.department_name) {
-        const fullName = `${user.first_name} ${user.last_name}`.trim();
-        map.set(fullName, user.department_name);
+        const decodedUser = decodeUserData(user);
+        const fullName = `${decodedUser.first_name} ${decodedUser.last_name}`.trim();
+        map.set(fullName, decodedUser.department_name);
       }
     });
     return map;
