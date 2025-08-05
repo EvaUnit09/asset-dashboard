@@ -29,8 +29,7 @@ import type { ExportConfig } from '@/types/export';
 import { 
   DEFAULT_EXPORT_CONFIG,
   CHART_TYPES,
-  SUMMARY_CARDS,
-  TABLE_COLUMNS
+  SUMMARY_CARDS
 } from '@/types/export';
 
 interface ExportModalProps {
@@ -51,7 +50,7 @@ export function ExportModal({ isOpen, onClose, assets, currentFilters }: ExportM
   const [config, setConfig] = useState<ExportConfig>(DEFAULT_EXPORT_CONFIG);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
-  const { exportToPDF, exportStatus, exportError, isExporting } = useAssetExport();
+  const { exportToPDF, exportToExcel, exportStatus, exportError, isExporting } = useAssetExport();
   const { validateConfig } = useExportValidation();
 
   // Update table filters from current dashboard filters
@@ -85,6 +84,16 @@ export function ExportModal({ isOpen, onClose, assets, currentFilters }: ExportM
     }
   };
 
+  const handleExcelExport = async () => {
+    try {
+      await exportToExcel(config);
+      // Modal will close automatically after successful export
+      setTimeout(() => onClose(), 2000);
+    } catch {
+      // Error is handled by the hook
+    }
+  };
+
   const toggleSummaryCard = (cardType: string) => {
     setConfig(prev => ({
       ...prev,
@@ -103,14 +112,6 @@ export function ExportModal({ isOpen, onClose, assets, currentFilters }: ExportM
     }));
   };
 
-  const toggleTableColumn = (columnId: string) => {
-    setConfig(prev => ({
-      ...prev,
-      tableColumns: prev.tableColumns.includes(columnId)
-        ? prev.tableColumns.filter(c => c !== columnId)
-        : [...prev.tableColumns, columnId]
-    }));
-  };
 
   const getExportStatusInfo = () => {
     switch (exportStatus) {
@@ -316,64 +317,60 @@ export function ExportModal({ isOpen, onClose, assets, currentFilters }: ExportM
               )}
             </Card>
 
-            {/* Table Section */}
+            {/* Excel Export Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Table className="w-4 h-4" />
-                  Asset Table
-                  <input
-                    type="checkbox"
-                    checked={config.includeTable}
-                    onChange={(e) => handleConfigChange({ includeTable: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 ml-auto"
-                  />
+                  Asset Details (Excel Export)
                 </CardTitle>
               </CardHeader>
-              {config.includeTable && (
-                <CardContent>
-                  <div className="space-y-4">
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Asset details are now exported as Excel files for better data interaction and analysis. 
+                    This provides better column sizing and filtering capabilities than PDF tables.
+                  </p>
+                  
+                  {/* Applied Filters Display */}
+                  {currentFilters && Object.values(currentFilters).some(Boolean) && (
                     <div>
-                      <label className="block text-sm font-medium mb-2">Table Columns</label>
-                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
-                        {Object.entries(TABLE_COLUMNS).map(([key, column]) => (
-                          <div key={key} className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`column-${key}`}
-                              checked={config.tableColumns.includes(key)}
-                              onChange={() => toggleTableColumn(key)}
-                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <label htmlFor={`column-${key}`} className="text-sm">
-                              {column.name}
-                            </label>
-                          </div>
-                        ))}
+                      <label className="block text-sm font-medium mb-2">Applied Filters</label>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(currentFilters).map(([key, value]) => 
+                          value ? (
+                            <Badge key={key} variant="secondary">
+                              {key}: {value}
+                            </Badge>
+                          ) : null
+                        )}
                       </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Current dashboard filters will be applied to the Excel export.
+                      </p>
                     </div>
-                    
-                    {/* Applied Filters Display */}
-                    {currentFilters && Object.values(currentFilters).some(Boolean) && (
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Applied Filters</label>
-                        <div className="flex flex-wrap gap-2">
-                          {Object.entries(currentFilters).map(([key, value]) => 
-                            value ? (
-                              <Badge key={key} variant="secondary">
-                                {key}: {value}
-                              </Badge>
-                            ) : null
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Current dashboard filters will be applied to the exported table data.
-                        </p>
-                      </div>
+                  )}
+                  
+                  <Button 
+                    onClick={handleExcelExport} 
+                    disabled={isExporting}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generating Excel...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export Asset Details to Excel
+                      </>
                     )}
-                  </div>
-                </CardContent>
-              )}
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
 
             {/* Data Summary */}

@@ -46,6 +46,42 @@ export const useAssetExport = () => {
     },
   });
 
+  // Mutation for Excel export
+  const excelExportMutation = useMutation({
+    mutationFn: async (config: ExportConfig): Promise<Blob> => {
+      setExportStatus('generating');
+      setExportError(null);
+
+      try {
+        const response = await api.post('/assets/export-excel', config, {
+          responseType: 'blob',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 60000, // 60 second timeout for Excel generation
+        });
+
+        if (response.status !== 200) {
+          throw new Error(`Excel export failed with status: ${response.status}`);
+        }
+
+        return response.data;
+      } catch (error: any) {
+        setExportStatus('error');
+        const errorMessage = error.response?.data?.detail || error.message || 'Excel export failed';
+        setExportError(errorMessage);
+        throw new Error(errorMessage);
+      }
+    },
+    onSuccess: () => {
+      setExportStatus('downloading');
+    },
+    onError: (error: Error) => {
+      setExportStatus('error');
+      setExportError(error.message);
+    },
+  });
+
   // Function to trigger PDF export and download
   const exportToPDF = useCallback(async (config: ExportConfig): Promise<void> => {
     try {
@@ -84,6 +120,44 @@ export const useAssetExport = () => {
     }
   }, [exportMutation]);
 
+  // Function to trigger Excel export and download
+  const exportToExcel = useCallback(async (config: ExportConfig): Promise<void> => {
+    try {
+      setExportStatus('generating');
+      const blob = await excelExportMutation.mutateAsync(config);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 16).replace(/[:-]/g, '');
+      const filename = `asset_details_${timestamp}.xlsx`;
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      
+      setExportStatus('success');
+      
+      // Reset status after 3 seconds
+      setTimeout(() => {
+        setExportStatus('idle');
+        setExportError(null);
+      }, 3000);
+      
+    } catch (error) {
+      // Error is already handled in the mutation
+      console.error('Excel export failed:', error);
+    }
+  }, [excelExportMutation]);
+
   // Query for export history
   const {
     data: exportHistory,
@@ -107,7 +181,8 @@ export const useAssetExport = () => {
   return {
     // Export functionality
     exportToPDF,
-    isExporting: exportMutation.isPending,
+    exportToExcel,
+    isExporting: exportMutation.isPending || excelExportMutation.isPending,
     exportStatus,
     exportError,
     resetExportState,
@@ -139,8 +214,8 @@ export const useExportValidation = () => {
     }
 
     // Validate that at least one section is included
-    if (!config.includeSummary && !config.includeCharts && !config.includeTable) {
-      errors.push('At least one section (Summary, Charts, or Table) must be included');
+    if (!config.includeSummary && !config.includeCharts) {
+      errors.push('At least one section (Summary or Charts) must be included');
     }
 
     // Validate summary cards if summary is included
@@ -153,10 +228,7 @@ export const useExportValidation = () => {
       errors.push('At least one chart must be selected when charts are included');
     }
 
-    // Validate table columns if table is included
-    if (config.includeTable && config.tableColumns.length === 0) {
-      errors.push('At least one table column must be selected when table is included');
-    }
+    // Table validation removed - asset details are now exported as Excel
 
     return errors;
   }, []);

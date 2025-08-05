@@ -118,9 +118,12 @@ class ChartGenerator:
         Generate pie chart showing status distribution.
         Matches frontend StatusPieChart component.
         """
+        # Filter to match dashboard (Active, Stock, Pending Rebuild only)
+        filtered_assets = [a for a in assets if a.status in ['Active', 'Stock', 'Pending Rebuild']]
+        
         # Group data by status
         status_counts = Counter()
-        for asset in assets:
+        for asset in filtered_assets:
             status = (asset.status or 'Unknown').lower()
             status_counts[status] += 1
         
@@ -170,10 +173,13 @@ class ChartGenerator:
         Generate area chart showing monthly asset trends by status.
         Matches frontend TrendChart component.
         """
+        # Filter to match dashboard (Active, Stock, Pending Rebuild only)
+        filtered_assets = [a for a in assets if a.status in ['Active', 'Stock', 'Pending Rebuild']]
+        
         # Group assets by month and status
         monthly_data = defaultdict(lambda: {'active': 0, 'pending': 0, 'stock': 0})
         
-        for asset in assets:
+        for asset in filtered_assets:
             if not asset.created_at:
                 continue
                 
@@ -232,9 +238,14 @@ class ChartGenerator:
         ax.set_xlabel('Month', fontsize=12, color=COLORS['dark'])
         ax.set_ylabel('Asset Count', fontsize=12, color=COLORS['dark'])
         
-        # X-axis labels
+        # X-axis labels - reduce density for readability
         ax.set_xticks(range(len(months)))
-        ax.set_xticklabels(months, rotation=45, ha='right')
+        if len(months) > 6:
+            # Show every 3rd month if more than 6 months
+            labels = [months[i] if i % 3 == 0 else '' for i in range(len(months))]
+            ax.set_xticklabels(labels, rotation=45, ha='right')
+        else:
+            ax.set_xticklabels(months, rotation=45, ha='right')
         
         # Grid and spines
         ax.grid(True, linestyle='--', alpha=0.3, color=COLORS['gray'])
@@ -334,9 +345,14 @@ class ChartGenerator:
         ax.set_xlabel('Quarter', fontsize=12, color=COLORS['dark'])
         ax.set_ylabel('Expiring Assets', fontsize=12, color=COLORS['dark'])
         
-        # X-axis labels
+        # X-axis labels - reduce density for readability
         ax.set_xticks(x)
-        ax.set_xticklabels(quarters, rotation=45, ha='right')
+        if len(quarters) > 4:
+            # Show every other quarter if more than 4 quarters
+            labels = [quarters[i] if i % 2 == 0 else '' for i in range(len(quarters))]
+            ax.set_xticklabels(labels, rotation=45, ha='right')
+        else:
+            ax.set_xticklabels(quarters, rotation=45, ha='right')
         
         # Grid and styling
         ax.grid(True, linestyle='--', alpha=0.3, color=COLORS['gray'])

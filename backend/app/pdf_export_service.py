@@ -89,9 +89,8 @@ class PDFExportService:
         if self.config.includeCharts and self.config.selectedCharts:
             story.extend(self._build_charts_section())
             
-        # Add table section if requested
-        if self.config.includeTable:
-            story.extend(self._build_table_section())
+        # Asset details table removed from PDF - use Excel export instead
+        # This improves PDF readability and provides better interaction with data
             
         # Add footer with timestamp if requested
         if self.config.includeTimestamp:
@@ -318,7 +317,12 @@ class PDFExportService:
         
         story.append(Paragraph("Charts and Analytics", self.styles['heading1']))
         
-        for chart_type in self.config.selectedCharts:
+        for i, chart_type in enumerate(self.config.selectedCharts):
+            # Add page break before each chart except the first
+            if i > 0:
+                story.append(PageBreak())
+            
+            # Add chart with title on its own page
             if chart_type == 'category':
                 story.extend(self._add_chart(
                     "Assets by Category",
@@ -457,21 +461,15 @@ class PDFExportService:
     
     def _calculate_statistics(self) -> Dict[str, int]:
         """Calculate summary statistics for the assets."""
-        stats = {
-            'total': len(self.assets),
-            'active': 0,
-            'pending': 0,
-            'stock': 0
-        }
+        # Filter assets to match dashboard (Active, Stock, Pending Rebuild only)
+        filtered_assets = [a for a in self.assets if a.status in ['Active', 'Stock', 'Pending Rebuild']]
         
-        for asset in self.assets:
-            status = (asset.status or '').lower()
-            if 'active' in status:
-                stats['active'] += 1
-            elif 'pending' in status and 'rebuild' in status:
-                stats['pending'] += 1
-            elif 'stock' in status:
-                stats['stock'] += 1
+        stats = {
+            'total': len(filtered_assets),
+            'active': len([a for a in filtered_assets if a.status == 'Active']),
+            'pending': len([a for a in filtered_assets if a.status == 'Pending Rebuild']),
+            'stock': len([a for a in filtered_assets if a.status == 'Stock'])
+        }
         
         return stats
     
