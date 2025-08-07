@@ -347,12 +347,30 @@ class ChartGenerator:
         # Create chart
         fig, ax = plt.subplots(figsize=(12, 6))
         
-        # Generate colors for different models
-        model_colors = {}
-        color_list = [COLORS['primary'], COLORS['success'], COLORS['warning'], 
-                     COLORS['danger'], COLORS['info'], COLORS['purple']]
-        for i, model in enumerate(all_models):
-            model_colors[model] = color_list[i % len(color_list)]
+        # Generate distinctly different colors for specific models
+        model_colors = {
+            # Apple chip generations - distinct blues and greens
+            'Apple M1': '#1f77b4',      # Blue
+            'Apple M2': '#2ca02c',      # Green  
+            'Apple M3': '#ff7f0e',      # Orange
+            'Apple M4': '#d62728',      # Red
+            'Apple Other': '#9467bd',   # Purple
+            
+            # Lenovo X13 generations - distinct warm colors
+            'Lenovo X13 Gen1': '#8c564b',   # Brown
+            'Lenovo X13 Gen2': '#e377c2',   # Pink
+            'Lenovo X13 Gen4': '#17becf',   # Cyan
+            'Lenovo X13': '#bcbd22',        # Olive
+        }
+        
+        # Fallback colors for any unexpected models
+        fallback_colors = ['#aec7e8', '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#c49c94']
+        fallback_index = 0
+        
+        for model in all_models:
+            if model not in model_colors:
+                model_colors[model] = fallback_colors[fallback_index % len(fallback_colors)]
+                fallback_index += 1
         
         # Create grouped bar chart
         x = range(len(quarters))
