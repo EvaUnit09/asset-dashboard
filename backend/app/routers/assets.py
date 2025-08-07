@@ -233,18 +233,16 @@ def export_assets_excel(
                 'Category': asset.category or '',
                 'Manufacturer': asset.manufacturer or '',
                 'Model': asset.model or '', 
+                'Model No': asset.model_no or '',
                 'Serial Number': asset.serial or '',
                 'Status': asset.status or '',
                 'Company': asset.company or '',
                 'Location': asset.location or '',
                 'Department': asset.department or '',
                 'Assigned User': asset.assigned_user_name or '',
-                'Purchase Date': asset.purchase_date.strftime('%Y-%m-%d') if asset.purchase_date else '',
+                'Warranty': asset.warranty or '',
                 'Warranty Expires': asset.warranty_expires.strftime('%Y-%m-%d') if asset.warranty_expires else '',
-                'Purchase Cost': asset.purchase_cost or '',
-                'Notes': asset.notes or '',
-                'Created At': asset.created_at.strftime('%Y-%m-%d %H:%M:%S') if asset.created_at else '',
-                'Updated At': asset.updated_at.strftime('%Y-%m-%d %H:%M:%S') if asset.updated_at else ''
+                'Created At': asset.created_at or ''
             })
         
         df = pd.DataFrame(asset_data)
