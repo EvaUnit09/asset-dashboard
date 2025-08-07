@@ -264,17 +264,31 @@ class ChartGenerator:
         """
         Generate bar chart showing warranty expiration trends.
         Matches frontend LaptopExpirationChart component.
+        Only includes Apple laptops and specific Lenovo models: X13 Gen1, Gen2, Gen4.
         """
-        # Filter for laptops with warranty expiration dates
-        laptop_assets = [a for a in assets if a.category and 'laptop' in a.category.lower()]
+        # Filter for specific laptop models only
+        laptop_assets = []
+        for asset in assets:
+            if not asset.category or 'laptop' not in asset.category.lower():
+                continue
+            if not asset.warranty_expires:
+                continue
+                
+            manufacturer = (asset.manufacturer or '').lower()
+            model = (asset.model or '').lower()
+            
+            # Include Apple laptops
+            if 'apple' in manufacturer:
+                laptop_assets.append(asset)
+            # Include only specific Lenovo models
+            elif 'lenovo' in manufacturer and ('x13' in model):
+                if any(gen in model for gen in ['gen1', 'gen 1', 'gen2', 'gen 2', 'gen4', 'gen 4']):
+                    laptop_assets.append(asset)
         
         # Group by quarter and model
         quarterly_data = defaultdict(lambda: defaultdict(int))
         
         for asset in laptop_assets:
-            if not asset.warranty_expires:
-                continue
-                
             try:
                 # Parse warranty expiration date
                 if isinstance(asset.warranty_expires, str):
@@ -287,14 +301,32 @@ class ChartGenerator:
                 
                 # Get model key
                 manufacturer = (asset.manufacturer or '').lower()
-                model = asset.model or 'Unknown'
+                model = (asset.model or '').lower()
                 
                 if 'apple' in manufacturer:
-                    model_key = 'Apple'
-                elif 'lenovo' in manufacturer:
-                    model_key = f"Lenovo - {model}"
+                    # Group Apple laptops by chip generation
+                    if 'm4' in model:
+                        model_key = 'Apple M4'
+                    elif 'm3' in model:
+                        model_key = 'Apple M3'
+                    elif 'm2' in model:
+                        model_key = 'Apple M2'
+                    elif 'm1' in model:
+                        model_key = 'Apple M1'
+                    else:
+                        model_key = 'Apple Other'
+                elif 'lenovo' in manufacturer and 'x13' in model:
+                    # Identify specific X13 generation
+                    if 'gen1' in model or 'gen 1' in model:
+                        model_key = 'Lenovo X13 Gen1'
+                    elif 'gen2' in model or 'gen 2' in model:
+                        model_key = 'Lenovo X13 Gen2'
+                    elif 'gen4' in model or 'gen 4' in model:
+                        model_key = 'Lenovo X13 Gen4'
+                    else:
+                        model_key = f"Lenovo X13"
                 else:
-                    model_key = model
+                    model_key = asset.model or 'Unknown'
                 
                 quarterly_data[quarter][model_key] += 1
                 
