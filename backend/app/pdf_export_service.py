@@ -41,6 +41,11 @@ class PDFExportService:
         self.chart_generator = ChartGenerator()
         self.styles = self._setup_styles()
         self.logger = logging.getLogger(__name__)
+        # Margins in points (72 pt = 1 inch)
+        self.left_margin = 72
+        self.right_margin = 72
+        self.top_margin = 72
+        self.bottom_margin = 72
         
         # Set page size and orientation
         if config.pageSize.upper() == 'A4':
@@ -80,10 +85,10 @@ class PDFExportService:
         doc = SimpleDocTemplate(
             buffer,
             pagesize=self.page_size,
-            rightMargin=72,
-            leftMargin=72,
-            topMargin=72,
-            bottomMargin=72,
+            rightMargin=self.right_margin,
+            leftMargin=self.left_margin,
+            topMargin=self.top_margin,
+            bottomMargin=self.bottom_margin,
             title=self.config.title
         )
         
@@ -357,7 +362,8 @@ class PDFExportService:
         story = []
         
         # Ensure charts start on a fresh page to avoid layout issues when
-        # the remaining space on the current page is insufficient (e.g. landscape)
+        # the remaining space on the current page is insufficient (e.g. landscape).
+        # Only break if there is already content in the story to avoid blank page at start.
         story.append(PageBreak())
         story.append(Paragraph("Charts and Analytics", self.styles['heading1']))
         
@@ -401,13 +407,38 @@ class PDFExportService:
         # Chart image
         try:
             img = Image(chart_buffer)
-            # Scale image to fit page width
-            img_width = 6.5 * inch
-            img_height = img_width * (img.imageHeight / img.imageWidth)
-            img.drawWidth = img_width
-            img.drawHeight = img_height
-            
-            story.append(KeepTogether([img]))
+            # Compute available space based on page size and margins
+            page_width, page_height = self.page_size
+            max_width = max(page_width - (self.left_margin + self.right_margin), 1)
+            # Reserve height for title + spacer above the image
+            reserved_above = 1.25 * inch
+            max_height = max(page_height - (self.top_margin + self.bottom_margin) - reserved_above, 1)
+
+            intrinsic_width = float(img.imageWidth)
+            intrinsic_height = float(img.imageHeight)
+            scale_w = max_width / intrinsic_width
+            scale_h = max_height / intrinsic_height
+            scale = min(scale_w, scale_h, 1.0)
+
+            img.drawWidth = intrinsic_width * scale
+            img.drawHeight = intrinsic_height * scale
+
+            # Log sizing for troubleshooting layout errors
+            self.logger.info(
+                "Chart image sizing",
+                extra={
+                    'page_width': page_width,
+                    'page_height': page_height,
+                    'max_width': max_width,
+                    'max_height': max_height,
+                    'intrinsic_width': intrinsic_width,
+                    'intrinsic_height': intrinsic_height,
+                    'draw_width': img.drawWidth,
+                    'draw_height': img.drawHeight,
+                }
+            )
+
+            story.append(img)
             story.append(Spacer(1, 20))
         except Exception as e:
             # Fallback if chart generation fails
