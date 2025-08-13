@@ -315,6 +315,9 @@ class PDFExportService:
         """Build the charts section with selected charts."""
         story = []
         
+        # Ensure charts start on a fresh page to avoid layout issues when
+        # the remaining space on the current page is insufficient (e.g. landscape)
+        story.append(PageBreak())
         story.append(Paragraph("Charts and Analytics", self.styles['heading1']))
         
         for i, chart_type in enumerate(self.config.selectedCharts):
