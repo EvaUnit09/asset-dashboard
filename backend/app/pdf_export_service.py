@@ -234,12 +234,12 @@ class PDFExportService:
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
         
-        story.append(metadata_table)
-        story.append(Spacer(1, 20))
+        story.append(KeepTogether([metadata_table]))
+        story.append(Spacer(1, 12))
         
         # Horizontal line
         story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e5e7eb')))
-        story.append(Spacer(1, 20))
+        story.append(Spacer(1, 16))
         
         return story
     
@@ -278,11 +278,11 @@ class PDFExportService:
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
             ]))
-            story.append(filter_table)
+            story.append(KeepTogether([filter_table]))
         else:
             story.append(Paragraph("No filters applied", self.styles['normal']))
         
-        story.append(Spacer(1, 20))
+        story.append(Spacer(1, 16))
         return story
     
     def _build_summary_section(self) -> List:
@@ -306,7 +306,7 @@ class PDFExportService:
             summary_data.append(['In Stock', str(stats['stock'])])
         
         if summary_data:
-            # Create a 2x2 grid for summary cards
+            # Create a 2x2 grid for summary cards and keep the table together
             if len(summary_data) <= 2:
                 cols = len(summary_data)
                 grid_data = [summary_data]
@@ -352,7 +352,7 @@ class PDFExportService:
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
             ]))
             
-            story.append(summary_table)
+            story.append(KeepTogether([summary_table]))
         
         story.append(Spacer(1, 30))
         return story
@@ -364,35 +364,45 @@ class PDFExportService:
         # Ensure charts start on a fresh page to avoid layout issues when
         # the remaining space on the current page is insufficient (e.g. landscape).
         # Only break if there is already content in the story to avoid blank page at start.
-        story.append(PageBreak())
-        story.append(Paragraph("Charts and Analytics", self.styles['heading1']))
+        section_header = Paragraph("Charts and Analytics", self.styles['heading1'])
         
         for i, chart_type in enumerate(self.config.selectedCharts):
-            # Add page break before each chart except the first
-            if i > 0:
-                story.append(PageBreak())
+            chart_block: List = []
             
-            # Add chart with title on its own page
+            # Build chart content
             if chart_type == 'category':
-                story.extend(self._add_chart(
+                chart_block = self._add_chart(
                     "Assets by Category",
                     self.chart_generator.generate_category_chart(self.assets)
-                ))
+                )
             elif chart_type == 'status':
-                story.extend(self._add_chart(
+                chart_block = self._add_chart(
                     "Status Distribution",
                     self.chart_generator.generate_status_pie_chart(self.assets)
-                ))
+                )
             elif chart_type == 'trends':
-                story.extend(self._add_chart(
+                chart_block = self._add_chart(
                     "Monthly Asset Trends",
                     self.chart_generator.generate_trends_chart(self.assets)
-                ))
+                )
             elif chart_type == 'warranty':
-                story.extend(self._add_chart(
+                chart_block = self._add_chart(
                     "Warranty Expiration Trends",
                     self.chart_generator.generate_warranty_expiration_chart(self.assets)
-                ))
+                )
+            
+            # Layout policy:
+            # - First chart: keep the section header and the chart together
+            #   so the header never sits alone on a page.
+            # - Subsequent charts: start on a new page and keep each chart block together.
+            if i == 0:
+                story.append(KeepTogether([section_header] + chart_block))
+            else:
+                story.append(PageBreak())
+                story.append(KeepTogether(chart_block))
+            
+            # Spacing after each chart block
+            story.append(Spacer(1, 20))
         
         return story
     
