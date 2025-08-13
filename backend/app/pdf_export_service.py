@@ -5,6 +5,7 @@ Uses ReportLab for PDF generation and integrates with ChartGenerator.
 
 import json
 from io import BytesIO
+import logging
 from datetime import datetime, date
 from typing import List, Dict, Any, Optional
 from collections import Counter
@@ -39,6 +40,7 @@ class PDFExportService:
         self.config = config
         self.chart_generator = ChartGenerator()
         self.styles = self._setup_styles()
+        self.logger = logging.getLogger(__name__)
         
         # Set page size and orientation
         if config.pageSize.upper() == 'A4':
@@ -50,6 +52,20 @@ class PDFExportService:
             self.page_size = landscape(page_size)
         else:
             self.page_size = portrait(page_size)
+        try:
+            page_w, page_h = self.page_size
+        except Exception:
+            page_w, page_h = (None, None)
+        self.logger.info(
+            "PDFExportService initialized",
+            extra={
+                'page_size': config.pageSize,
+                'orientation': config.orientation,
+                'computed_page_width': page_w,
+                'computed_page_height': page_h,
+                'asset_count': len(self.assets)
+            }
+        )
     
     def generate_pdf(self) -> BytesIO:
         """
@@ -97,7 +113,32 @@ class PDFExportService:
             story.extend(self._build_footer())
         
         # Build PDF
-        doc.build(story)
+        try:
+            self.logger.info(
+                "Building PDF document",
+                extra={
+                    'story_items': len(story),
+                    'include_summary': self.config.includeSummary,
+                    'include_charts': self.config.includeCharts,
+                    'selected_charts': self.config.selectedCharts,
+                    'include_filters': self.config.includeFilters and bool(self.config.tableFilters)
+                }
+            )
+            doc.build(story)
+        except Exception:
+            # Log full stack trace with configuration for troubleshooting
+            try:
+                config_json = json.dumps(self.config.model_dump())
+            except Exception:
+                config_json = "<unserializable>"
+            self.logger.exception(
+                "Failed to build PDF document",
+                extra={
+                    'export_config': config_json,
+                    'asset_count': len(self.assets)
+                }
+            )
+            raise
         buffer.seek(0)
         
         return buffer

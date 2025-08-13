@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+import logging
 from fastapi.responses import FileResponse
 from sqlmodel import select, Session
 from datetime import datetime
@@ -13,6 +14,7 @@ from ..models import Asset, ExportConfig, ExportHistory, ExportResponse
 from ..pdf_export_service import PDFExportService
 
 router = APIRouter(prefix="/assets", tags=["assets"])
+logger = logging.getLogger(__name__)
 
 @router.get("", response_model=list[Asset])
 def read_assets(session=Depends(get_session)):
@@ -49,6 +51,9 @@ def export_assets_pdf(
         FileResponse: PDF file download
     """
     try:
+        logger.info("Received export-pdf request", extra={
+            'config': config.model_dump() if hasattr(config, 'model_dump') else str(config)
+        })
         # Get assets with streaming to reduce memory usage
         # For exports, we still need all assets but process them in chunks
         statement = select(Asset)
@@ -122,7 +127,7 @@ def export_assets_pdf(
             session.commit()
         except Exception as e:
             # Log error but don't fail the export
-            print(f"Failed to save export history: {e}")
+            logger.exception("Failed to save export history", extra={'error': str(e)})
         
         # Generate filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -136,6 +141,10 @@ def export_assets_pdf(
         )
         
     except Exception as e:
+        logger.exception("PDF export failed", extra={
+            'error': str(e),
+            'config': config.model_dump() if hasattr(config, 'model_dump') else str(config)
+        })
         # Save failed export to history
         try:
             export_history = ExportHistory(

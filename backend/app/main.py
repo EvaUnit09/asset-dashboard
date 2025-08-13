@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import logging
 from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
 from .db import engine
@@ -27,6 +28,9 @@ app = FastAPI(
     title="Asset Management API",
     lifespan=lifespan,
 )
+
+# Basic logging configuration (INFO level); adjust as needed via env
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s - %(message)s')
 origins = [
     "http://10.4.208.227",
     "http://asset-ny.worldwide.bbc.co.uk",
