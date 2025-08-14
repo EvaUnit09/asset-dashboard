@@ -73,15 +73,7 @@ def sync_snipeit_assets():
     # Get fresh department lookup data
     dept_lookup = user_department_map()
     
-    # Debug: Show what's in the department lookup
-    print(f"\n=== DEPARTMENT LOOKUP DEBUG ===")
-    print(f"Total users in dept_lookup: {len(dept_lookup)}")
-    users_with_depts = {k: v for k, v in dept_lookup.items() if v is not None}
-    print(f"Users with departments: {len(users_with_depts)}")
-    print("Sample entries:")
-    for i, (user_id, dept) in enumerate(list(users_with_depts.items())[:5]):
-        print(f"  User ID {user_id}: {dept}")
-    print("=== END DEPT LOOKUP DEBUG ===\n")
+    
     
     with Session(engine) as session:
         asset_batch = []
