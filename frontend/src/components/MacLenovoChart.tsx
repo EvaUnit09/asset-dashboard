@@ -28,8 +28,8 @@ export function MacLenovoChart({ data, users = [] }: MacLenovoChartProps) {
     // Filter Mac/Lenovo assets first with more robust detection
     const macLenovoAssets = data.filter(asset => {
       const manufacturer = asset.manufacturer?.toLowerCase() || '';
-      const isApple = manufacturer.includes('apple');
-      const isLenovo = manufacturer.includes('lenovo') || manufacturer.includes('think');
+      const isApple = manufacturer.includes('apple') && asset.category?.toLowerCase().includes('laptop');
+      const isLenovo = manufacturer.includes('lenovo') && asset.category?.toLowerCase().includes('laptop');
       return isApple || isLenovo;
     });
 
