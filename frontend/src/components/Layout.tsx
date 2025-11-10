@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router';
-import { Building2, Database, BarChart3, Users } from 'lucide-react';
+import { Building2, Database, BarChart3, Users, Laptop } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,6 +26,12 @@ export function Layout({ children }: LayoutProps) {
       label: 'Users',
       icon: Users,
       active: location.pathname === '/users'
+    },
+    {
+      href: '/assets',
+      label: 'Assets',
+      icon: Laptop,
+      active: location.pathname === '/assets'
     }
   ];
 
