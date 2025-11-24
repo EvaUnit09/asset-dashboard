@@ -49,17 +49,11 @@ Database (PostgreSQL)
 - **Process Manager**: NSSM for backend service
 - **CI/CD**: GitHub Actions
 - **SSL**: Custom certificates
-
-## API Reference
-
-### Base URL
-```
-Production: https://asset-ny.worldwide.bbc.co.uk/api
-Development: http://localhost:8000/api
-```
+ment: http://localhost:8000/api
+  
 
 ### Authentication
-Currently, the API does not require authentication. In production environments, consider implementing API key authentication or JWT tokens.
+Currently, the API does not require authentication due to need to be on company network.
 
 ### Endpoints
 
@@ -271,14 +265,6 @@ npm run dev
 - Export history tracking
 - Multiple format support
 
-## Troubleshooting
-
-### Common Issues
-1. **Sync Failures**: Check Snipe-IT API connectivity and credentials
-2. **Database Connection**: Verify PostgreSQL service and connection string
-3. **Frontend Build**: Ensure all dependencies are installed
-4. **PDF Export**: Check ReportLab installation and file permissions
-
 ### Logs
 - Backend logs: Check application logs in Windows Event Viewer
 - Frontend logs: Browser developer console
@@ -295,12 +281,6 @@ npm run dev
 - No authentication implemented
 - CORS configured for specific domains
 - SSL certificates for HTTPS
-
-### Recommendations
-- Implement API key authentication
-- Add user session management
-- Enable request rate limiting
-- Regular security updates
 
 ## Maintenance
 
@@ -324,13 +304,3 @@ For technical support and issues:
 3. Verify configuration settings
 4. Test with sample data
 
-## Session Documentation
-
-The `docs/session/` directory contains detailed documentation for specific features and fixes:
-- User API implementation
-- Department name enhancement
-- Mac vs Lenovo chart fixes
-- PDF export features
-- Database querying guide
-- Local testing guide
-- Troubleshooting guides 
