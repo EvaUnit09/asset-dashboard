@@ -140,3 +140,58 @@ async def fetch_all_hardware_async() -> AsyncGenerator[list[dict], None]:
                 break
 
         
+def create_asset_in_snipeit(asset_data: dict) -> dict:
+    """Create an asset in Snipe-IT."""
+    url = f"{settings.snipeit_api_url}/hardware"
+    headers = {
+        "Authorization": f"Bearer {settings.snipeit_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    response = requests.post(url, headers=headers, json=asset_data, verify=CA_BUNDLE, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+def update_asset_in_snipeit(asset_name: str, asset_data: dict) -> dict:
+    """Update an asset in Snipe-IT."""
+    url = f"{settings.snipeit_api_url}/hardware/{asset_name}"
+    headers = {
+        "Authorization": f"Bearer {settings.snipeit_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    response = requests.put(url, headers=headers, json=asset_data, verify=CA_BUNDLE, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+def delete_asset_in_snipeit(asset_name: str) -> bool:
+    """Delete an asset in Snipe-IT."""
+    url = f"{settings.snipeit_api_url}/hardware/{asset_name}"
+    headers = {
+        "Authorization": f"Bearer {settings.snipeit_token}",
+        "Accept": "application/json",
+    }
+    response = requests.delete(url, headers=headers, verify=CA_BUNDLE, timeout=30)
+    response.raise_for_status()
+    return response.status_code == 204
+
+def checkout_asset_in_snipeit(asset_name: str, user_id: int | None = None) -> bool:
+    """Check out an asset to a user in Snipe-IT."""
+    url = f"{settings.snipeit_api_url}/hardware/{asset_name}/checkout"
+    headers = {
+        "Authorization": f"Bearer {settings.snipeit_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }   
+    if user_id:
+        data = {
+            "assigned_to": user_id,
+        }
+    else:
+        data = {
+            "assigned_to": None,
+            "status": "Active",
+        }
+    response = requests.post(url, headers=headers, json=data, verify=CA_BUNDLE, timeout=30)
+    response.raise_for_status()
+    return response.status_code == 204
