@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";            
-import { Building2, Laptop, Activity, TrendingUp, GpuIcon, Download, ClipboardPen, Edit } from 'lucide-react';
+import { Building2, Laptop, Activity, TrendingUp, GpuIcon, Download, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {AssetTable} from '../components/AssetTable';
 import { useAssets } from '../hooks/useAssets';
