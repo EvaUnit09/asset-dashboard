@@ -20,5 +20,3 @@ class Settings(BaseSettings):
     postgres_password: str
         
 settings = Settings()  # type: ignore
-print(f"DATABASE_URL: {settings.database_url}")
-print(f"config loaded from: {settings.model_config.get('env_file')}")

@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
+import { Combobox } from '@/components/ui/combobox';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -133,27 +133,33 @@ export default function AssetEdit() {
                     {/* Model */}
                     <div>
                       <label className="text-sm font-medium">Model</label>
-                      <Input
+                      <Combobox
                         value={formData.model || ''}
-                        onChange={(e) => handleChange('model', e.target.value)}
+                        onValueChange={(value) => handleChange('model', value)}
+                        options={models}
+                        placeholder="Select or type model..."
                       />
                     </div>
     
                     {/* Category */}
                     <div>
                       <label className="text-sm font-medium">Category</label>
-                      <Input
+                      <Combobox
                         value={formData.category || ''}
-                        onChange={(e) => handleChange('category', e.target.value)}
+                        onValueChange={(value) => handleChange('category', value)}
+                        options={categories}
+                        placeholder="Select or type category..."
                       />
                     </div>
     
                     {/* Manufacturer */}
                     <div>
                       <label className="text-sm font-medium">Manufacturer</label>
-                      <Input
+                      <Combobox
                         value={formData.manufacturer || ''}
-                        onChange={(e) => handleChange('manufacturer', e.target.value)}
+                        onValueChange={(value) => handleChange('manufacturer', value)}
+                        options={manufacturers}
+                        placeholder="Select or type manufacturer..."
                       />
                     </div>
     
@@ -184,18 +190,22 @@ export default function AssetEdit() {
                     {/* Company */}
                     <div>
                       <label className="text-sm font-medium">Company</label>
-                      <Input
+                      <Combobox
                         value={formData.company || ''}
-                        onChange={(e) => handleChange('company', e.target.value)}
+                        onValueChange={(value) => handleChange('company', value)}
+                        options={companies}
+                        placeholder="Select or type company..."
                       />
                     </div>
     
                     {/* Location */}
                     <div>
                       <label className="text-sm font-medium">Location</label>
-                      <Input
+                      <Combobox
                         value={formData.location || ''}
-                        onChange={(e) => handleChange('location', e.target.value)}
+                        onValueChange={(value) => handleChange('location', value)}
+                        options={locations}
+                        placeholder="Select or type location..."
                       />
                     </div>
     

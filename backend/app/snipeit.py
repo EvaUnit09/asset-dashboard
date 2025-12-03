@@ -152,9 +152,9 @@ def create_asset_in_snipeit(asset_data: dict) -> dict:
     response.raise_for_status()
     return response.json()
 
-def update_asset_in_snipeit(asset_name: str, asset_data: dict) -> dict:
+def update_asset_in_snipeit(asset_id: int, asset_data: dict) -> dict:
     """Update an asset in Snipe-IT."""
-    url = f"{settings.snipeit_api_url}/hardware/{asset_name}"
+    url = f"{settings.snipeit_api_url}/hardware/{asset_id}"
     headers = {
         "Authorization": f"Bearer {settings.snipeit_token}",
         "Accept": "application/json",
@@ -164,9 +164,9 @@ def update_asset_in_snipeit(asset_name: str, asset_data: dict) -> dict:
     response.raise_for_status()
     return response.json()
 
-def delete_asset_in_snipeit(asset_name: str) -> bool:
+def delete_asset_in_snipeit(asset_id: int) -> bool:
     """Delete an asset in Snipe-IT."""
-    url = f"{settings.snipeit_api_url}/hardware/{asset_name}"
+    url = f"{settings.snipeit_api_url}/hardware/{asset_id}"
     headers = {
         "Authorization": f"Bearer {settings.snipeit_token}",
         "Accept": "application/json",
@@ -175,9 +175,9 @@ def delete_asset_in_snipeit(asset_name: str) -> bool:
     response.raise_for_status()
     return response.status_code == 204
 
-def checkout_asset_in_snipeit(asset_name: str, user_id: int | None = None) -> bool:
+def checkout_asset_in_snipeit(asset_id: int, user_id: int | None = None) -> bool:
     """Check out an asset to a user in Snipe-IT."""
-    url = f"{settings.snipeit_api_url}/hardware/{asset_name}/checkout"
+    url = f"{settings.snipeit_api_url}/hardware/{asset_id}/checkout"
     headers = {
         "Authorization": f"Bearer {settings.snipeit_token}",
         "Accept": "application/json",

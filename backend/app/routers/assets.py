@@ -41,7 +41,7 @@ def create_asset(asset_data: AssetCreate, session: Session = Depends(get_session
             detail="Asset tag already exists"
             )
         # 2. Create asset in Snipe IT first to get the ID
-        snipeit_response = create_asset_in_snipeit(asset_data.model_dump())
+        snipeit_response = create_asset_in_snipeit(asset_data.model_dump(mode='json'))
         snipeit_id = snipeit_response["id"]
         # 3. Create asset in the database with Snipe-IT's ID
         db_asset = Asset(
@@ -87,11 +87,13 @@ def update_assets(asset_id: int, asset_data: AssetUpdate, session: Session = Dep
             )
         # 3. existing asset contains db record so we can use it
         update_dict = asset_data.model_dump(exclude_unset=True)
-
+        
         if update_dict:
-            snipeit_response = update_asset_in_snipeit(asset_id, update_dict)
+            # Convert to JSON-serializable format for Snipe-IT API
+            update_dict_json = asset_data.model_dump(mode='json', exclude_unset=True)
+            snipeit_response = update_asset_in_snipeit(asset_id, update_dict_json)
 
-            # 4. Update the existing_asset objects fields
+            # 4. Update the existing_asset objects fields with Python types
             for key, value in update_dict.items():
                 setattr(existing_asset, key, value)
             session.add(existing_asset)
@@ -105,7 +107,7 @@ def update_assets(asset_id: int, asset_data: AssetUpdate, session: Session = Dep
         raise
     except Exception as e:
         session.rollback()
-        logger.exception(f"Failed to update asse: {str(e)}")
+        logger.exception(f"Failed to update asset: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to update asset: {str(e)}"
@@ -124,7 +126,7 @@ def delete_asset(asset_id: int, session: Session = Depends(get_session)):
     """
     try:
         # 1. check if asset exists
-        existing_asset = Session.get(Asset, asset_id)
+        existing_asset = session.get(Asset, asset_id)
         if not existing_asset:
             raise HTTPException(
                 status_code=404,
