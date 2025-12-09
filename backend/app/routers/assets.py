@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 import logging
 from fastapi.responses import FileResponse
+from numpy.linalg import det
+from sqlalchemy import exc
 from sqlmodel import select, Session
 from datetime import datetime
 from tempfile import NamedTemporaryFile
@@ -8,18 +10,171 @@ import json
 import os
 import pandas as pd
 from io import BytesIO
+from sqlmodel import select
+from ..snipeit import create_asset_in_snipeit, update_asset_in_snipeit
 
 from ..db import get_session
-from ..models import Asset, ExportConfig, ExportHistory, ExportResponse
+from ..models import Asset, ExportConfig, ExportHistory, AssetCreate, AssetUpdate
 from ..pdf_export_service import PDFExportService
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 logger = logging.getLogger(__name__)
 
+@router.post("/create", response_model=Asset)
+def create_asset(asset_data: AssetCreate, session: Session = Depends(get_session)):
+
+    """Create a new asset in both Snipe-IT and the database
+    
+    Args:
+        asset_data: AssetCreate model
+        session: Database session
+    Returns:
+        Asset: The created asset with Snipe-IT ID
+    """
+    try:
+        # 1. Validate asset_tag uniqueness
+        existing = session.exec(
+            select(Asset).where(Asset.asset_tag == asset_data.asset_tag)
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400,
+            detail="Asset tag already exists"
+            )
+        # 2. Create asset in Snipe IT first to get the ID
+        snipeit_response = create_asset_in_snipeit(asset_data.model_dump(mode='json'))
+        snipeit_id = snipeit_response["id"]
+        # 3. Create asset in the database with Snipe-IT's ID
+        db_asset = Asset(
+            id=snipeit_id,
+            **asset_data.model_dump()
+        )
+        session.add(db_asset)
+        session.commit()
+        session.refresh(db_asset)
+
+        logger.info(f"Created Asset: {db_asset.asset_tag} (ID: {snipeit_id})")
+        return db_asset
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        logger.exception(f"Failed to create asset: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create asset: {str(e)}"
+        )
+@router.put("/{asset_id}", response_model=Asset)
+def update_assets(asset_id: int, asset_data: AssetUpdate, session: Session = Depends(get_session)):
+    """Updates an asset in both Snipe-IT and the database
+    
+    Args:
+        asset_name: ID of the asset to update
+        asset_data: AssetUpdate model with field to update
+        session: Database session
+    Returns:
+        Asset: The updated asset
+    """
+    # Fetch existing asset from database
+    existing_asset = session.get(Asset, asset_id)
+    try:
+        # 1. Validate asset_tag uniqueness
+        existing = session.get(Asset, asset_id)
+        if not existing_asset:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Asset with ID {asset_id} not found"
+            )
+        # 3. existing asset contains db record so we can use it
+        update_dict = asset_data.model_dump(exclude_unset=True)
+        
+        if update_dict:
+            # Convert to JSON-serializable format for Snipe-IT API
+            update_dict_json = asset_data.model_dump(mode='json', exclude_unset=True)
+            snipeit_response = update_asset_in_snipeit(asset_id, update_dict_json)
+
+            # 4. Update the existing_asset objects fields with Python types
+            for key, value in update_dict.items():
+                setattr(existing_asset, key, value)
+            session.add(existing_asset)
+            session.commit()
+            session.refresh(existing_asset)
+
+            logger.info(f"Updated Asset: {existing_asset.asset_tag} (ID:) {asset_id}")
+        
+        return existing_asset
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        logger.exception(f"Failed to update asset: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update asset: {str(e)}"
+        )
+@router.delete("/{asset_id}",status_code=204)
+def delete_asset(asset_id: int, session: Session = Depends(get_session)):
+    """
+    Soft delete an asset by changing its status to 'Disposed'
+
+    Args:
+        asset_name: Id of the asset to mark as disposed
+        session: Database session
+
+    Returns:
+        None (204 No Content on success)
+    """
+    try:
+        # 1. check if asset exists
+        existing_asset = session.get(Asset, asset_id)
+        if not existing_asset:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Asset with ID {asset_id} not found"
+            )
+        # 2. Update status to "Disposed" in Snipe-IT
+        update_data = {"status": "Disposed"}
+        update_asset_in_snipeit(asset_id, update_data)
+
+        # 3. Update status to "Disposed" in local DB
+        existing_asset.status = "Disposed"
+        session.add(existing_asset)
+        session.commit()
+
+        logger.info(f"Marked asset as disposed: {existing_asset}")
+
+        # 4. Return None
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        session.rollback()
+        logger.exception(f"Failed to mark asset as disposed")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to mark asset as disposed: {str(e)}"
+        )
+
+
+
 @router.get("", response_model=list[Asset])
 def read_assets(session=Depends(get_session)):
     """Get all assets for dashboard use."""
     return session.exec(select(Asset)).all()
+    
+@router.get("/{asset_id}", response_model=Asset)
+def get_asset(asset_id: int, session: Session = Depends(get_session)):
+    """
+    Get single asset by ID.
+    """
+    asset = session.get(Asset, asset_id)
+    if not asset:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Asset with ID {asset_id} not found"
+        )
+    return asset
+
 
 @router.get("/paginated", response_model=list[Asset])
 def read_assets_paginated(

@@ -1,0 +1,286 @@
+import { useNavigate } from 'react-router';
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";            
+import { Building2, Laptop, Activity, TrendingUp, GpuIcon, Download, Edit } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {AssetTable} from '../components/AssetTable';
+import { useAssets } from '../hooks/useAssets';
+import { ExportModal } from '../components/ExportModal';
+import { useUsers } from '../hooks/useUsers';
+import { decodeUserData } from '../utils/htmlDecode';
+
+
+// -----------------------------------------------------------------------
+
+export default function Assets() {
+  const {
+    data: assets = [],
+    isLoading,
+    isError,
+    error,
+  } = useAssets();
+
+  const navigate = useNavigate();
+  const { data: users = [] } = useUsers();
+  const [selectedAssetId, setSelectedAssetID] = useState<number | null>(null);
+  
+  const [company,      setCompany]      = useState('all');
+  const [manufacturer, setManufacturer] = useState('all');
+  const [category,     setCategory]     = useState('all');
+  const [model,        setModel]        = useState('all');
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [department, setDepartment] = useState('all');
+
+  /* ---------- derived state ---------- */
+  
+  // Create a mapping of user names to their departments for filtering
+  const userDepartmentMap = useMemo(() => {
+    const map = new Map<string, string>();
+    users?.forEach(user => {
+      if (user.first_name && user.last_name && user.department_name) {
+        const decodedUser = decodeUserData(user);
+        const fullName = `${decodedUser.first_name} ${decodedUser.last_name}`.trim();
+        map.set(fullName, decodedUser.department_name);
+      }
+    });
+    return map;
+  }, [users]);
+  
+
+  const filtered = useMemo(
+    () =>
+      assets.filter(
+        a => {
+          // Only show Active, Pending Rebuild, and Stock assets
+          if (!(a.status === 'Active' || a.status === 'Pending Rebuild' || a.status === 'Stock')) {
+            return false;
+          }
+
+          // Apply other filters
+          if (company !== 'all' && a.company !== company) return false;
+          if (manufacturer !== 'all' && a.manufacturer !== manufacturer) return false;
+          if (category !== 'all' && a.category !== category) return false;
+          if (model !== 'all' && a.model !== model) return false;
+
+          // Department filtering: check both asset department and user department
+          if (department !== 'all') {
+            // First try asset department (for backwards compatibility)
+            if (a.department === department) return true;
+            
+            // Then try user department (for AD-synced departments)
+            if (a.assigned_user_name) {
+              const userDept = userDepartmentMap.get(a.assigned_user_name);
+              if (userDept === department) return true;
+            }
+            
+            // If neither matches, exclude this asset
+            return false;
+          }
+
+          return true;
+        }
+      ),
+    [assets, company, manufacturer, category, model, department, userDepartmentMap]
+  );
+
+  const companies      = useMemo(() => [...new Set(assets.map(a => a.company))].filter((c): c is string => c != null),      [assets]);
+  const manufacturers  = useMemo(() => [...new Set(assets.map(a => a.manufacturer))].filter((m): m is string => m != null), [assets]);
+  const categories     = useMemo(() => [...new Set(assets.map(a => a.category))].filter((c): c is string => c != null),     [assets]);
+  const models  = useMemo(() => [...new Set(assets.map(a => a.model))].filter((m): m is string => m != null).sort(), [assets]);
+  // Get departments from both users and assets to ensure completeness
+  const departments = useMemo(() => {
+    const userDepts = users?.map(user => user.department_name).filter((d): d is string => Boolean(d)) || [];
+    const assetDepts = assets.map(a => a.department).filter((d): d is string => Boolean(d)) || [];
+    return [...new Set([...userDepts, ...assetDepts])].sort();
+  }, [users, assets]);
+
+
+  const stats = {
+    total:    filtered.length,
+    active:   filtered.filter(a => a.status === 'Active').length,
+    'Pending Rebuild': filtered.filter(a => a.status === 'Pending Rebuild').length,
+    stock:    filtered.filter(a => a.status === 'Stock').length,
+  };
+
+  /* ---------- UI ---------- */
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {isLoading && <p>Loading Assets...</p>}
+      {isError && <p className='text-red-600'>Error: {error.message}</p>}
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <header className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">
+                  Monthly asset tracking and analytics
+                </h1>
+                <p className="text-slate-600">
+                  This dashboard provides a comprehensive view of our asset inventory.
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => setIsExportModalOpen(true)} 
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export PDF
+            </Button>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4 p-4 bg-white rounded-lg shadow-sm border">
+            <FilterSelect
+              label="Company"
+              value={company}
+              onChange={setCompany}
+              options={companies}
+            />
+            <FilterSelect
+              label="Manufacturer"
+              value={manufacturer}
+              onChange={setManufacturer}
+              options={manufacturers}
+            />
+            <FilterSelect
+              label="Category"
+              value={category}
+              onChange={setCategory}
+              options={categories}
+            />
+            <FilterSelect
+              label="Model"
+              value={model}
+              onChange={setModel}
+              options={models}
+            />
+            <FilterSelect
+              label="Department"
+              value={department}
+              onChange={setDepartment}
+              options={departments}
+            />
+          </div>
+        </header>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <SummaryCard title="Total Assets" count={stats.total}    icon={GpuIcon} border="border-l-blue-500"   />
+          <SummaryCard title="Active"        count={stats.active}   icon={Activity}  border="border-l-green-500"  />
+          <SummaryCard title="Pending Rebuild"   count={stats['Pending Rebuild']} icon={TrendingUp}border="border-l-orange-500" />
+          <SummaryCard title="In Stock"      count={stats.stock}    icon={Laptop}    border="border-l-purple-500"/>
+        </div>
+        <Button 
+            onClick={() => navigate(`/assets/${selectedAssetId}/edit`)}
+            disabled={!selectedAssetId}
+            className="flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              Edit
+            </Button>
+
+        {/* Table */}
+        <ChartCard title="Asset Details" icon={Laptop}>
+          <AssetTable data={filtered} selectable={true} selectedId={selectedAssetId} onSelectAsset={setSelectedAssetID} />
+        </ChartCard>
+      </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        assets={filtered}
+        currentFilters={{
+          company: company !== 'all' ? company : undefined,
+          manufacturer: manufacturer !== 'all' ? manufacturer : undefined,
+          category: category !== 'all' ? category : undefined,
+          model: model !== 'all' ? model : undefined,
+          department: department !== 'all' ? department : undefined,
+        }}
+      />
+    </div>
+  );
+}
+
+/* ----- tiny helpers -------------------------------------------------- */
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <label className="text-sm font-medium text-slate-700">{label}:</label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {options.map(opt => (
+            <SelectItem key={opt} value={opt}>
+              {opt}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  count,
+  icon: Icon,
+  border,
+}: {
+  title: string;
+  count: number;
+  icon: typeof GpuIcon;
+  border: string;
+}) {
+  return (
+    <Card className={`border-l-4 ${border} hover:shadow-lg transition-shadow`}>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
+        <Icon className="h-4 w-4" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold text-slate-900">{count}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChartCard({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: typeof Building2;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <span className="p-1 bg-slate-100 rounded">
+            <Icon className="h-4 w-4" />
+          </span>
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}

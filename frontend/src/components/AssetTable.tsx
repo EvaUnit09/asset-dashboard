@@ -12,9 +12,12 @@ import type { Asset } from "@/types/asset";
 
 interface Props {
   data: Asset[];
+  selectable?: boolean;
+  selectedId?: number | null;
+  onSelectAsset?: (id: number | null) => void;
 }
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 /* --- styling helpers -------------------------------------------------- */
 const statusColor = (s: string) => {
@@ -27,9 +30,11 @@ const statusColor = (s: string) => {
 };
 /* ---------------------------------------------------------------------- */
 
-export const AssetTable = ({ data }: Props) => {
+export const AssetTable = ({ data, selectable, selectedId, onSelectAsset }: Props) => {
   const [page,       setPage]       = useState(1);
   const [query,      setQuery]      = useState("");
+
+
 
   /* 1 ─ filter by search term */
   const filtered = useMemo(() => {
@@ -82,6 +87,11 @@ export const AssetTable = ({ data }: Props) => {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50">
+              {selectable && (
+                <TableHead className="w-12">
+                  {/* Empty header for checkbox column */}
+                </TableHead>
+              )}
               {[
                 "Asset Name",
                 "Category",
@@ -104,8 +114,17 @@ export const AssetTable = ({ data }: Props) => {
             {paginatedSlice.map((a) => (
               <TableRow
                 key={a.id}
-                className="hover:bg-slate-50 transition-colors"
-              >
+                className="hover:bg-slate-50 transition-colors">
+                  {selectable && (
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedId === a.id}
+                        onChange={() => onSelectAsset?.(selectedId === a.id ? null : a.id)}
+                        className="w-4 h-4 cursor-pointer"
+                        />
+                    </TableCell>
+                  )}
                 <TableCell className="font-medium">{a.asset_name}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">

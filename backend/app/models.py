@@ -5,6 +5,41 @@ from datetime import date
 from pydantic import BaseModel
 from typing import List
 
+class AssetCreate(BaseModel):
+    """Model for creating a new asset"""
+    asset_name: Optional[str] = None
+    asset_tag: str
+    model: Optional[str] = None
+    category: Optional[str] = None
+    manufacturer: Optional[str] = None
+    serial: Optional[str] = None
+    warranty: Optional[str] = None
+    warranty_expires: Optional[date] = None
+    location: Optional[str] = None
+    department: Optional[str] = None
+    assigned_user_name: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[str] = None
+    company: Optional[str] = None
+
+class AssetUpdate(BaseModel):
+    """Model for updating an asset"""
+    asset_name: Optional[str] = None
+    asset_tag: Optional[str] = None
+    model: Optional[str] = None
+    category: Optional[str] = None
+    manufacturer: Optional[str] = None
+    serial: Optional[str] = None
+    warranty: Optional[str] = None
+    warranty_expires: Optional[date] = None
+    location: Optional[str] = None
+    department: Optional[str] = None
+    assigned_user_name: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[str] = None
+    company: Optional[str] = None
+
+
 
 class Asset(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

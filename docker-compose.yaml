@@ -20,14 +20,16 @@ volumes:
 # Service section  #
 ####################
 services:
-  ### 1️⃣  Postgres DB ###
+  ### 1. Local Postgres DB's ###
   db:
     image: postgres:16-alpine
+    env_file:
+    - ./backend/.env
     environment:
       <<: *common-env
       POSTGRES_DB: assetdb
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set_in_backend/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks: [internal]
@@ -39,11 +41,13 @@ services:
 
   db_test:
     image: postgres:16-alpine
+    env_file:
+    - ./backend/.env
     environment:
       <<: *common-env
       POSTGRES_DB: assetdb_test
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set_in_backend/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata_test:/var/lib/postgresql/data
     ports:
