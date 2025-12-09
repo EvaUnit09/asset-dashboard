@@ -17,6 +17,6 @@ class Settings(BaseSettings):
     snipeit_token: str
     requests_ca_bundle: str | None = None
     echo_sql: bool = False
-    postgres_password: str
+    postgres_password: str | None = None
         
 settings = Settings()  # type: ignore
