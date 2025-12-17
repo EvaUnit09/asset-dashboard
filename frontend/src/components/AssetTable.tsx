@@ -47,6 +47,7 @@ export const AssetTable = ({ data, selectable, selectedId, onSelectAsset }: Prop
         a.model,
         a.category,
         a.manufacturer,
+        a.assigned_user_name,
         a.company,
         a.location,
         a.status,
@@ -98,6 +99,7 @@ export const AssetTable = ({ data, selectable, selectedId, onSelectAsset }: Prop
                 "Manufacturer",
                 "Model",
                 "Serial",
+                "Assigned User",
                 "Company",
                 "Location",
                 "Status",
@@ -134,6 +136,9 @@ export const AssetTable = ({ data, selectable, selectedId, onSelectAsset }: Prop
                 <TableCell>{a.manufacturer}</TableCell>
                 <TableCell className="text-slate-600">{a.model}</TableCell>
                 <TableCell className="text-slate-600">{a.serial}</TableCell>
+                <TableCell className="text-slate-600">
+                  {a.assigned_user_name || <span className="text-slate-400">Unassigned</span>}
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary" className="capitalize">
                     {a.company}
@@ -151,7 +156,7 @@ export const AssetTable = ({ data, selectable, selectedId, onSelectAsset }: Prop
 
             {!paginatedSlice.length && (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-sm">
+                <TableCell colSpan={selectable ? 11 : 10} className="py-8 text-center text-sm">
                   No assets match your search.
                 </TableCell>
               </TableRow>
